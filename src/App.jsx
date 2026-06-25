@@ -365,6 +365,45 @@ function App() {
             </div>
           </section>
 
+          {/* Roadmap Section */}
+          <section id="roadmap" className="app-container">
+            <h2 style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '4rem' }}>Development <span className="gradient-text">Roadmap</span></h2>
+            <div style={{ position: 'relative', borderLeft: '2px solid var(--primary-glow)', marginLeft: '2rem', paddingLeft: '2rem' }}>
+              {[
+                { phase: "Phase 1: Foundation", items: ["Blockchain Architecture Design", "Consensus & Validator Model", "Native VAMP Token Launch"] },
+                { phase: "Phase 2: Testnet", items: ["Public Testnet Deployment", "Validator Onboarding", "Bug Bounty Program"] },
+                { phase: "Phase 3: Mainnet", items: ["Mainnet Activation", "Staking Rewards Enablement", "Governance initialization"] },
+                { phase: "Phase 4: Ecosystem", items: ["Mobile Wallets", "Cross-chain Bridge Solutions", "Developer SDKs"] }
+              ].map((p, i) => (
+                <div key={i} style={{ marginBottom: '3rem', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-2.7rem', top: '0', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--primary-glow)', boxShadow: '0 0 10px var(--primary-glow)' }}></div>
+                  <h3 style={{ marginBottom: '1rem', color: 'var(--primary-glow)' }}>{p.phase}</h3>
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    {p.items.map((item, idx) => <span key={idx} style={{ color: 'var(--text-secondary)' }}>• {item}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Security & Audit Section */}
+          <section id="audit" className="app-container" style={{ textAlign: 'center' }}>
+            <div className="card glass" style={{ padding: '4rem 2rem' }}>
+              <Shield size={64} color="#ff0040" style={{ marginBottom: '2rem' }} />
+              <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>Security <span className="gradient-text">First</span></h2>
+              <p style={{ maxWidth: '700px', margin: '0 auto 2.5rem', color: 'var(--text-secondary)' }}>
+                VampExAi contracts follow industry-standard security practices. No admin withdrawal. No hidden minting. Fully transparent code verifiable on BSCScan.
+              </p>
+              <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {['Immutable Contracts', 'Reentrancy Protection', 'On-Chain Verification', 'CertiK Audited'].map((s, i) => (
+                  <div key={i} className="badge glass" style={{ padding: '0.8rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#22c55e' }}>
+                    ✓ {s}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* Footer Highlights */}
           <footer style={{ padding: '8rem 2rem 4rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', marginTop: '4rem' }}>
             <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', textAlign: 'left', marginBottom: '4rem' }}>
