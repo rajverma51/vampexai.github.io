@@ -13,7 +13,12 @@ import {
   CheckCircle2,
   ChevronRight,
   TrendingUp,
-  Fingerprint
+  Brain,
+  Zap,
+  Globe,
+  Database,
+  Shield,
+  FileText
 } from 'lucide-react';
 import { STAKING_ADDRESS, VAMP_ADDRESS, STAKING_ABI, VAMP_ABI } from './contracts/config';
 import logo from './assets/logo.png';
@@ -208,41 +213,213 @@ function App() {
     setLoading(false);
   };
 
+  const [activeView, setActiveView] = useState('landing'); // 'landing' or 'app'
+
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ maxWidth: '100%', padding: 0 }}>
+      {/* Navigation */}
       <nav className="navbar">
-        <div className="logo">
-          <img src={logo} alt="VampExAI Logo" style={{ height: '42px' }} />
+        <div className="logo" onClick={() => setActiveView('landing')} style={{ cursor: 'pointer' }}>
+          <img src={logo} alt="VampExAI Logo" style={{ height: '32px' }} />
           VampExAI
         </div>
-        {account ? (
-          <div className="btn btn-outline">
-            <Wallet size={18} />
-            {account.slice(0, 6)}...{account.slice(-4)}
-          </div>
-        ) : (
-          <button className="btn btn-primary" onClick={connectWallet}>
-            <Wallet size={18} />
-            Connect Wallet
+        
+        <div className="nav-links desktop-only" style={{ display: 'flex', gap: '2rem' }}>
+          <a href="#protocol" className="nav-link">Protocol</a>
+          <a href="#ai-engine" className="nav-link">AI Engine</a>
+          <a href="#tokenomics" className="nav-link">Tokenomics</a>
+          <a href="#roadmap" className="nav-link">Roadmap</a>
+          <a href="#audit" className="nav-link">Audit</a>
+        </div>
+
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          {account ? (
+            <div className="btn btn-outline">
+              <Wallet size={18} />
+              {account.slice(0, 6)}...{account.slice(-4)}
+            </div>
+          ) : (
+            <button className="btn btn-outline" onClick={connectWallet}>
+              Connect Wallet
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => setActiveView('app')}>
+            <ArrowUpRight size={18} />
+            Launch App
           </button>
-        )}
+        </div>
       </nav>
 
-      {status.message && (
-        <div className={`animated card`} style={{ marginBottom: '2rem', borderLeft: `4px solid ${status.type === 'error' ? '#ef4444' : '#22c55e'}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {status.type === 'error' ? <AlertCircle color="#ef4444" /> : <CheckCircle2 color="#22c55e" />}
-            <p>{status.message}</p>
-          </div>
-        </div>
-      )}
+      {activeView === 'landing' ? (
+        <>
+          {/* Hero Section */}
+          <section className="hero-section app-container" style={{ minHeight: '90vh', textAlign: 'left', display: 'flex', alignItems: 'center' }}>
+            <div className="hero-content animated" style={{ maxWidth: '800px' }}>
+              <div className="badge glass" style={{ padding: '0.5rem 1rem', borderRadius: '20px', marginBottom: '2rem', display: 'inline-block', fontSize: '0.8rem', color: '#ff0040' }}>
+                🧠 AI-POWERED • BSC • NON-CUSTODIAL
+              </div>
+              <h1>The Future of DeFi is <span className="gradient-text">Intelligent</span></h1>
+              <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
+                VampExAi combines advanced AI algorithms with immutable smart contracts to optimize your yield, minimize risk, and maximize returns — 24/7.
+              </p>
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <button className="btn btn-primary" onClick={() => setActiveView('app')} style={{ padding: '1rem 2.5rem' }}>
+                  Start Earning <ChevronRight size={18} />
+                </button>
+                <button className="btn btn-outline" style={{ padding: '1rem 2.5rem' }}>View Documentation</button>
+              </div>
+              <div style={{ marginTop: '3rem', display: 'flex', gap: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} /> Non-Custodial</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16} /> Immutable Contracts</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Shield size={16} /> Audited by CertiK</span>
+              </div>
+            </div>
+          </section>
 
-      {fetchError && (
-        <div className="card" style={{ marginBottom: '2rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }}>
-          <h4 style={{ color: '#ef4444' }}>Protocol Connection Error</h4>
-          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>{fetchError}</p>
-        </div>
-      )}
+          {/* Price Ticker */}
+          <div className="ticker-wrap">
+            <div className="ticker">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="ticker-item">
+                  <span>VAMP TOKEN: <span style={{ color: '#22c55e' }}>$0.00124 ▲ +5.2%</span></span>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <span>MARKET CAP: <span style={{ color: 'var(--cyber-blue)' }}>$1.24M</span></span>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <span>HOLDERS: <span style={{ color: 'var(--liquid-gold)' }}>8,420</span></span>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <span>24H VOLUME: <span style={{ color: 'var(--cyber-blue)' }}>$245K</span></span>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Features Section */}
+          <section id="protocol" className="app-container">
+            <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+              <h2 style={{ fontSize: '3rem' }}>Why <span className="gradient-text">VampExAi?</span></h2>
+              <div style={{ width: '100px', h: '4px', background: 'linear-gradient(to right, #ff0040, #8b5cf6)', margin: '1rem auto' }}></div>
+            </div>
+            <div className="dashboard-grid">
+              {[
+                { icon: <Brain />, title: "AI Yield Optimizer", desc: "Proprietary AI engine analyzes market conditions in real-time to auto-allocate funds across highest-yielding pools." },
+                { icon: <Zap />, title: "Zero Gas Architecture", desc: "Optimized BSC infrastructure batches transactions to deliver near-zero gas fees for all users." },
+                { icon: <Shield />, title: "Battle-Tested Security", desc: "Contracts audited by CertiK. Reentrancy guards, timelocks, and immutable logic protect every transaction." },
+                { icon: <Globe />, title: "Global & Permissionless", desc: "No KYC. No borders. Connect your wallet and start earning in under 60 seconds from anywhere." },
+                { icon: <Database />, title: "Sustainable Tokenomics", desc: "Fixed supply of 10,000,000 tokens. Deflationary mechanisms ensure long-term value appreciation." },
+                { icon: <Users />, title: "10-Level Referral", desc: "Build your network and earn passive income from up to 10 referral levels. Grow together with VampExAi." }
+              ].map((f, i) => (
+                <div key={i} className="card animated" style={{ borderTop: `4px solid ${i % 2 === 0 ? '#ff0040' : '#8b5cf6'}` }}>
+                  <div style={{ color: i % 2 === 0 ? '#ff0040' : '#8b5cf6', marginBottom: '1.5rem' }}>{React.cloneElement(f.icon, { size: 40 })}</div>
+                  <h3 style={{ marginBottom: '1rem' }}>{f.title}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* AI Engine Section */}
+          <section id="ai-engine" className="app-container glass" style={{ borderRadius: '40px', margin: '4rem auto', padding: '4rem 3rem' }}>
+            <div className="dashboard-grid" style={{ alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '2.5rem', marginBottom: '2rem' }}>The VampExAi <span className="gradient-text">Intelligence Engine</span></h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                  Our AI doesn't just follow trends — it predicts them. Trained on millions of DeFi data points to continuously optimize your portfolio.
+                </p>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {['Real-time sentiment analysis', 'Automated risk assessment', 'Predictive yield forecasting', 'MEV protection'].map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <CheckCircle2 color="#22c55e" size={20} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn btn-primary" style={{ marginTop: '2.5rem' }}>Explore AI Features</button>
+              </div>
+              <div style={{ position: 'relative', textAlign: 'center' }}>
+                 <div style={{ width: '100%', height: '300px', background: 'radial-gradient(circle, rgba(255,0,64,0.1) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+                    <Brain size={150} color="#ff0040" style={{ filter: 'drop-shadow(0 0 20px rgba(255,0,64,0.5))' }} />
+                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Tokenomics Section */}
+          <section id="tokenomics" className="app-container">
+            <h2 style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '4rem' }}>Sustainable <span className="gradient-text">Tokenomics</span></h2>
+            <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+              {[
+                { icon: <Coins />, label: "Total Supply", val: "10,000,000" },
+                { icon: <Globe />, label: "Network", val: "BSC (Mainnet)" },
+                { icon: <Coins />, label: "Launch Price", val: "$0.001" },
+                { icon: <Zap />, label: "Minting", val: "Forever Disabled" },
+                { icon: <Lock />, label: "Security", val: "Immutable" },
+                { icon: <Zap />, label: "Utility", val: "Yield & Governance" }
+              ].map((t, i) => (
+                <div key={i} className="card glass" style={{ textAlign: 'center', padding: '1.5rem' }}>
+                  <div style={{ color: 'var(--primary-glow)', marginBottom: '1rem' }}>{React.cloneElement(t.icon, { size: 24 })}</div>
+                  <div className="stat-label">{t.label}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '0.5rem' }}>{t.val}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Footer Highlights */}
+          <footer style={{ padding: '8rem 2rem 4rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', marginTop: '4rem' }}>
+            <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', textAlign: 'left', marginBottom: '4rem' }}>
+              <div>
+                <div className="logo" style={{ marginBottom: '1.5rem' }}>VampExAI</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>The future of decentralized intelligent finance. Built for security, optimized for yield.</p>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                  <Globe size={20} color="var(--text-secondary)" />
+                  <Users size={20} color="var(--text-secondary)" />
+                </div>
+              </div>
+              <div>
+                <h4 style={{ marginBottom: '1.5rem' }}>Protocol</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <a href="#">AI Reward Logic</a>
+                  <a href="#">Staking Pools</a>
+                  <a href="#">Audit Report</a>
+                </div>
+              </div>
+              <div>
+                <h4 style={{ marginBottom: '1.5rem' }}>Community</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <a href="#">Telegram Group</a>
+                  <a href="#">Discord Server</a>
+                  <a href="#">Twitter Updates</a>
+                </div>
+              </div>
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+              © 2026 VampExAI Protocol. Decentralized • Transparent • Permissionless
+            </div>
+          </footer>
+        </>
+      ) : (
+        <div className="app-main animated" style={{ padding: '2rem' }}>
+          <button className="btn btn-outline" onClick={() => setActiveView('landing')} style={{ marginBottom: '2rem' }}>
+            ← Back to Landing
+          </button>
+          
+          {/* Status Messages */}
+          {status.message && (
+            <div className={`animated card`} style={{ marginBottom: '2rem', borderLeft: `4px solid ${status.type === 'error' ? '#ef4444' : '#22c55e'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {status.type === 'error' ? <AlertCircle color="#ef4444" /> : <CheckCircle2 color="#22c55e" />}
+                <p>{status.message}</p>
+              </div>
+            </div>
+          )}
+
+          {fetchError && (
+            <div className="card" style={{ marginBottom: '2rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }}>
+              <h4 style={{ color: '#ef4444' }}>Protocol Connection Error</h4>
+              <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>{fetchError}</p>
+            </div>
+          )}
 
       {account && fetchingProfile && (
         <div className="card animated" style={{ textAlign: 'center', padding: '3rem' }}>
@@ -375,9 +552,11 @@ function App() {
         </section>
       )}
 
-      <footer style={{ marginTop: '5rem', textAlign: 'center', color: '#475569', fontSize: '0.9rem' }}>
-        © 2026 VampExAI Protocol. Powered by Blockchain Intelligence.
-      </footer>
+          <footer style={{ marginTop: '5rem', textAlign: 'center', color: '#475569', fontSize: '0.9rem' }}>
+            © 2026 VampExAI Protocol. Powered by Blockchain Intelligence.
+          </footer>
+        </div>
+      )}
     </div>
   );
 }
