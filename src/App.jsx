@@ -16,6 +16,7 @@ import {
   Fingerprint
 } from 'lucide-react';
 import { STAKING_ADDRESS, VAMP_ADDRESS, STAKING_ABI, VAMP_ABI } from './contracts/config';
+import logo from './assets/logo.png';
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -35,6 +36,8 @@ function App() {
     setTimeout(() => setStatus({ type: '', message: '' }), 5000);
   };
 
+  const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
@@ -43,8 +46,12 @@ function App() {
       } catch (err) {
         notify('error', 'Failed to connect wallet');
       }
+    } else if (isMobile()) {
+      // Mobile browser me window.ethereum nahi hota — MetaMask ke in-app browser mein open karo
+      const dappUrl = 'rajverma51.github.io/vampexai.github.io';
+      window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
     } else {
-      notify('error', 'Please install MetaMask');
+      notify('error', 'Please install MetaMask → https://metamask.io');
     }
   };
 
@@ -205,7 +212,7 @@ function App() {
     <div className="app-container">
       <nav className="navbar">
         <div className="logo">
-          <Fingerprint size={32} color="#8b5cf6" />
+          <img src={logo} alt="VampExAI Logo" style={{ height: '32px', marginRight: '10px' }} />
           VampExAI
         </div>
         {account ? (
@@ -357,7 +364,7 @@ function App() {
 
       {!account && (
         <section className="animated" style={{ textAlign: 'center', padding: '5rem 0' }}>
-          <TrendingUp size={64} color="#8b5cf6" style={{ marginBottom: '2rem' }} />
+          <img src={logo} alt="VampExAI Logo" style={{ height: '120px', marginBottom: '2rem' }} />
           <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Earn 1% Daily Rewards</h1>
           <p style={{ color: '#94a3b8', maxWidth: '600px', margin: '0 auto 2rem' }}>
             Secure your VAMP tokens in the high-yield protocol. 100 days lock period with transparent blockchain verification.
