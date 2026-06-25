@@ -212,7 +212,7 @@ function App() {
     <div className="app-container">
       <nav className="navbar">
         <div className="logo">
-          <img src={logo} alt="VampExAI Logo" style={{ height: '32px', marginRight: '10px' }} />
+          <img src={logo} alt="VampExAI Logo" style={{ height: '42px' }} />
           VampExAI
         </div>
         {account ? (
