@@ -18,7 +18,9 @@ import {
   Globe,
   Database,
   Shield,
-  FileText
+  FileText,
+  Menu,
+  X
 } from 'lucide-react';
 import { STAKING_ADDRESS, VAMP_ADDRESS, STAKING_ABI, VAMP_ABI } from './contracts/config';
 import logo from './assets/logo.png';
@@ -214,9 +216,29 @@ function App() {
   };
 
   const [activeView, setActiveView] = useState('landing'); // 'landing' or 'app'
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <div className="app-container" style={{ maxWidth: '100%', padding: 0 }}>
+      {/* Mobile Menu Overlay */}
+      <div className={`mobile-overlay ${isMenuOpen ? 'active' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="mobile-menu-btn" onClick={toggleMenu}><X size={32} /></button>
+        </div>
+        <div className="logo" style={{ marginBottom: '2rem' }}>VampExAI</div>
+        <a href="#protocol" className="nav-link" style={{ fontSize: '1.5rem' }} onClick={closeMenu}>Protocol</a>
+        <a href="#ai-engine" className="nav-link" style={{ fontSize: '1.5rem' }} onClick={closeMenu}>AI Engine</a>
+        <a href="#tokenomics" className="nav-link" style={{ fontSize: '1.5rem' }} onClick={closeMenu}>Tokenomics</a>
+        <a href="#roadmap" className="nav-link" style={{ fontSize: '1.5rem' }} onClick={closeMenu}>Roadmap</a>
+        <a href="#audit" className="nav-link" style={{ fontSize: '1.5rem' }} onClick={closeMenu}>Audit</a>
+        <button className="btn btn-primary" onClick={() => { setActiveView('app'); closeMenu(); }} style={{ width: '100%', marginTop: '2rem' }}>
+          Launch App
+        </button>
+      </div>
+
       {/* Navigation */}
       <nav className="navbar">
         <div className="logo" onClick={() => setActiveView('landing')} style={{ cursor: 'pointer' }}>
@@ -224,7 +246,7 @@ function App() {
           VampExAI
         </div>
         
-        <div className="nav-links desktop-only" style={{ display: 'flex', gap: '2rem' }}>
+        <div className="nav-links desktop-only">
           <a href="#protocol" className="nav-link">Protocol</a>
           <a href="#ai-engine" className="nav-link">AI Engine</a>
           <a href="#tokenomics" className="nav-link">Tokenomics</a>
@@ -232,21 +254,24 @@ function App() {
           <a href="#audit" className="nav-link">Audit</a>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          {account ? (
-            <div className="btn btn-outline">
-              <Wallet size={18} />
-              {account.slice(0, 6)}...{account.slice(-4)}
-            </div>
-          ) : (
-            <button className="btn btn-outline" onClick={connectWallet}>
-              Connect Wallet
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="desktop-only" style={{ display: 'flex', gap: '1rem' }}>
+            {account ? (
+              <div className="btn btn-outline">
+                <Wallet size={18} />
+                {account.slice(0, 6)}...{account.slice(-4)}
+              </div>
+            ) : (
+              <button className="btn btn-outline" onClick={connectWallet}>
+                Connect Wallet
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => setActiveView('app')}>
+              <ArrowUpRight size={18} />
+              Launch App
             </button>
-          )}
-          <button className="btn btn-primary" onClick={() => setActiveView('app')}>
-            <ArrowUpRight size={18} />
-            Launch App
-          </button>
+          </div>
+          <button className="mobile-menu-btn" onClick={toggleMenu}><Menu size={28} /></button>
         </div>
       </nav>
 
