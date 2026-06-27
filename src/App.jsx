@@ -18,7 +18,10 @@ import {
   Globe,
   Database,
   Shield,
-  FileText,
+  MessageSquare,
+  LogOut,
+  Copy,
+  ExternalLink,
   Menu,
   X
 } from 'lucide-react';
@@ -54,13 +57,28 @@ function App() {
         notify('error', 'Failed to connect wallet');
       }
     } else if (isMobile()) {
-      // Mobile browser me window.ethereum nahi hota — MetaMask ke in-app browser mein open karo
       const dappUrl = 'rajverma51.github.io/vampexai.github.io';
       window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
     } else {
       notify('error', 'Please install MetaMask → https://metamask.io');
     }
   };
+
+  const disconnectWallet = () => {
+    setAccount(null);
+    setUserProfile(null);
+    setStakes([]);
+    notify('success', 'Wallet disconnected');
+  };
+
+  // Auto-fill referrer from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref && ethers.isAddress(ref)) {
+      setReferralInput(ref);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!account) return;
@@ -129,22 +147,22 @@ function App() {
 
   const handleRegister = async () => {
     if (!secretInput) return notify('error', 'Secret password is required');
+    if (!referralInput || !ethers.isAddress(referralInput)) {
+      return notify('error', 'Valid Sponsor/Referrer address is mandatory');
+    }
+    if (referralInput.toLowerCase() === account.toLowerCase()) {
+      return notify('error', 'You cannot refer yourself');
+    }
+
     setLoading(true);
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(STAKING_ADDRESS, STAKING_ABI, signer);
 
-      // If referrer field is empty OR same as own address, use ZeroAddress (first/root user)
-      const rawReferrer = referralInput.trim();
-      const referrer =
-        !rawReferrer || rawReferrer.toLowerCase() === account.toLowerCase()
-          ? ethers.ZeroAddress
-          : rawReferrer;
-
       const secretHash = ethers.keccak256(ethers.toUtf8Bytes(secretInput));
 
-      const tx = await contract.register(referrer, secretHash);
+      const tx = await contract.register(referralInput, secretHash);
       await tx.wait();
       notify('success', 'Successfully registered!');
       setFetchingProfile(true);
@@ -257,9 +275,14 @@ function App() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div className="desktop-only" style={{ display: 'flex', gap: '1rem' }}>
             {account ? (
-              <div className="btn btn-outline">
-                <Wallet size={18} />
-                {account.slice(0, 6)}...{account.slice(-4)}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="btn btn-outline" style={{ cursor: 'default' }}>
+                  <Wallet size={18} />
+                  {account.slice(0, 6)}...{account.slice(-4)}
+                </div>
+                <button className="btn btn-outline" onClick={disconnectWallet} title="Disconnect" style={{ padding: '0.8rem' }}>
+                  <LogOut size={18} color="#ef4444" />
+                </button>
               </div>
             ) : (
               <button className="btn btn-outline" onClick={connectWallet}>
@@ -499,15 +522,12 @@ function App() {
           </h2>
           <div className="dashboard-grid">
             <div className="input-group">
-              <label>Referrer Address (Optional)</label>
+              <label>Sponsor/Referrer Wallet Address</label>
               <input 
-                placeholder="0x... (Leave empty if you are the first/root user)" 
+                placeholder="Enter Sponsor's 0x Address" 
                 value={referralInput} 
                 onChange={(e) => setReferralInput(e.target.value)}
               />
-              <small style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                💡 Agar aap pehle user (sponsor) hain toh yeh field khaali chhod dein.
-              </small>
             </div>
             <div className="input-group">
               <label>Secret Recovery Password (SAVE THIS!)</label>
@@ -557,10 +577,32 @@ function App() {
           <div className="card animated">
             <div className="stat-label">Referral Rewards</div>
             <div className="stat-value" style={{ color: '#22c55e' }}>{userProfile.referralRewards} VAMP</div>
-            <button className="btn btn-outline" style={{ width: '100%' }} onClick={handleClaimReferral} disabled={loading}>
+            <button className="btn btn-outline" style={{ width: '100%', marginBottom: '1rem' }} onClick={handleClaimReferral} disabled={loading}>
               <ArrowUpRight size={18} />
               Claim Referral Bonus
             </button>
+            <div className="glass" style={{ padding: '1rem', borderRadius: '12px', fontSize: '0.8rem' }}>
+              <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Users size={14} /> My Referral Link
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  readOnly 
+                  value={`${window.location.origin}${window.location.pathname}?ref=${account}`}
+                  style={{ background: 'rgba(0,0,0,0.2)', border: 'none', padding: '0.5rem', borderRadius: '6px', width: '100%', fontSize: '0.7rem', color: '#8b5cf6' }}
+                />
+                <button 
+                  className="btn btn-outline" 
+                  style={{ padding: '0.5rem' }} 
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?ref=${account}`);
+                    notify('success', 'Link copied to clipboard!');
+                  }}
+                >
+                  <Copy size={14} />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="card animated" style={{ gridColumn: '1 / -1' }}>
