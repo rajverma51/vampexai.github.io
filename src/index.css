@@ -1,7 +1,7 @@
 :root {
-  --bg-color: #0a0a0f;
+  --bg-color: #050214;
   --bg-navy: #0d1117;
-  --card-bg: rgba(13, 17, 23, 0.7);
+  --card-bg: rgba(8, 4, 30, 0.55);
   --primary-glow: #ff0040; /* Electric Crimson */
   --secondary-glow: #8b5cf6; /* Neon Purple */
   --cyber-blue: #00d4ff;
@@ -29,9 +29,29 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(255, 0, 64, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+
+  /* Fixed full-page background image */
+  background-image: url('/bg.png');
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* Dark overlay so content is readable over the background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 2, 20, 0.62);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Everything must be above the overlay */
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 h1, h2, h3 {
@@ -61,9 +81,10 @@ h1, h2, h3 {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 15, 0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--glass-border);
+  background: rgba(5, 2, 20, 0.55);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15);
 }
 
 .logo {
@@ -150,9 +171,10 @@ section {
 }
 
 .card {
-  background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
+  background: rgba(8, 4, 30, 0.52);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(139, 92, 246, 0.18);
   border-radius: 24px;
   padding: 2rem;
   transition: all 0.4s ease;
@@ -160,17 +182,20 @@ section {
 
 .card:hover {
   transform: translateY(-8px);
-  border-color: rgba(255, 0, 64, 0.3);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(139, 92, 246, 0.45);
+  background: rgba(10, 5, 35, 0.65);
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(139,92,246,0.12);
 }
 
 /* Specific Styles for Ticker */
 .ticker-wrap {
   width: 100%;
   overflow: hidden;
-  background: rgba(255, 0, 64, 0.05);
-  border-top: 1px solid rgba(255, 0, 64, 0.1);
-  border-bottom: 1px solid rgba(255, 0, 64, 0.1);
+  background: rgba(5, 2, 20, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
   padding: 1rem 0;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.9rem;

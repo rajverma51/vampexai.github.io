@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import HeroBg from './HeroBg';
 import { 
   Wallet, 
   Coins, 
@@ -301,12 +300,25 @@ function App() {
 
       {activeView === 'landing' ? (
         <>
-          {/* Hero Section — Animated Canvas Background */}
-          <section style={{ position: 'relative', width: '100%', height: '95vh', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
-            <HeroBg />
-            {/* Text overlay on the left */}
-            <div className="app-container" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
-              <div className="hero-content animated" style={{ maxWidth: '520px', background: 'rgba(5,2,20,0.55)', backdropFilter: 'blur(10px)', padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.2)' }}>
+          {/* Hero Section — transparent over fixed bg image */}
+          <section style={{ 
+            position: 'relative', 
+            width: '100%', 
+            height: '95vh',  
+            display: 'flex', 
+            alignItems: 'center',
+            background: 'transparent'
+          }}>
+            <div className="app-container" style={{ width: '100%' }}>
+              <div className="hero-content animated" style={{ 
+                maxWidth: '520px', 
+                background: 'rgba(5,2,20,0.52)', 
+                backdropFilter: 'blur(18px)', 
+                WebkitBackdropFilter: 'blur(18px)',
+                padding: '2.5rem', 
+                borderRadius: '24px', 
+                border: '1px solid rgba(139,92,246,0.25)'
+              }}>
                 <div className="badge glass" style={{ padding: '0.4rem 1rem', borderRadius: '20px', marginBottom: '1.5rem', display: 'inline-block', fontSize: '0.75rem', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.3)' }}>
                   🧠 AI-POWERED • BSC • NON-CUSTODIAL
                 </div>
