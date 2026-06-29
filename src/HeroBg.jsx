@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import logo from './assets/logo.png';
 
 export default function HeroBg() {
   const canvasRef = useRef(null);
@@ -17,414 +16,597 @@ export default function HeroBg() {
     resize();
     window.addEventListener('resize', resize);
 
-    const logoImg = new Image();
-    logoImg.src = logo;
+    // ─── Pillar particle streams ───
+    const makeStreamParticles = (count) =>
+      Array.from({ length: count }, () => ({
+        y: Math.random(),
+        speed: Math.random() * 0.003 + 0.001,
+        size: Math.random() * 2 + 0.5,
+        brightness: Math.random(),
+        offset: Math.random() * 0.06 - 0.03,
+      }));
+    const streamL1 = makeStreamParticles(60);
+    const streamL2 = makeStreamParticles(40);
+    const streamR1 = makeStreamParticles(60);
+    const streamR2 = makeStreamParticles(40);
 
-    // Particles
-    const PARTS = 100;
-    const parts = Array.from({ length: PARTS }, () => ({
-      x: Math.random() * 2000,
-      y: Math.random() * 1000,
-      r: Math.random() * 1.8 + 0.4,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: -Math.random() * 0.4 - 0.1,
-      a: Math.random(),
-      c: Math.random() > 0.5 ? [139, 92, 246] : [0, 212, 255],
+    // ─── Floating particles ───
+    const floatParts = Array.from({ length: 80 }, () => ({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0003,
+      vy: -Math.random() * 0.0005 - 0.0001,
+      r: Math.random() * 1.5 + 0.3,
+      a: Math.random() * 0.6 + 0.2,
+      c: Math.random() > 0.5 ? '#8b5cf6' : '#00d4ff',
     }));
 
-    // Neural nodes (keeping edge areas only to not overpower pillars)
-    const nodes = Array.from({ length: 40 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0002,
-      vy: (Math.random() - 0.5) * 0.0002,
-      r: Math.random() * 1.5 + 0.5,
-      ph: Math.random() * Math.PI * 2,
+    // Ground pipe data movers
+    const pipeMovers = Array.from({ length: 8 }, (_, i) => ({
+      offset: i * 0.13,
+      speed: 0.25 + Math.random() * 0.15,
+      row: i % 4,
     }));
 
-    function drawPillar(x, y1, y2, width, side) {
-      const W = canvas.width, H = canvas.height;
-      const px = x * W, ph1 = y1 * H, ph2 = y2 * H;
-      const hw = width * W;
+    function lerp(a, b, t) { return a + (b - a) * t; }
 
-      // Main pillar body gradient
-      const bodyGrad = ctx.createLinearGradient(px - hw, 0, px + hw, 0);
-      if (side === 'L') {
-        bodyGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        bodyGrad.addColorStop(0.3, 'rgba(60,30,120,0.35)');
-        bodyGrad.addColorStop(0.7, 'rgba(100,50,200,0.55)');
-        bodyGrad.addColorStop(0.9, 'rgba(139,92,246,0.7)');
-        bodyGrad.addColorStop(1, 'rgba(180,120,255,0.4)');
-      } else {
-        bodyGrad.addColorStop(0, 'rgba(180,120,255,0.4)');
-        bodyGrad.addColorStop(0.1, 'rgba(139,92,246,0.7)');
-        bodyGrad.addColorStop(0.3, 'rgba(100,50,200,0.55)');
-        bodyGrad.addColorStop(0.7, 'rgba(60,30,120,0.35)');
-        bodyGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      }
-      ctx.fillStyle = bodyGrad;
-      ctx.fillRect(px - hw, ph1, hw * 2, ph2 - ph1);
-
-      // Bright edge line
-      const edgeX = side === 'L' ? px + hw * 0.85 : px - hw * 0.85;
-      const edgeGrad = ctx.createLinearGradient(0, ph1, 0, ph2);
-      edgeGrad.addColorStop(0, 'rgba(139,92,246,0)');
-      edgeGrad.addColorStop(0.1, 'rgba(200,150,255,0.9)');
-      edgeGrad.addColorStop(0.5, 'rgba(139,92,246,0.9)');
-      edgeGrad.addColorStop(0.9, 'rgba(200,150,255,0.9)');
-      edgeGrad.addColorStop(1, 'rgba(139,92,246,0)');
+    // Draw a glowing line
+    function gLine(x1, y1, x2, y2, color, alpha, width = 1) {
       ctx.save();
-      ctx.strokeStyle = edgeGrad;
-      ctx.lineWidth = 2;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.moveTo(edgeX, ph1);
-      ctx.lineTo(edgeX, ph2);
-      ctx.stroke();
-      ctx.restore();
-
-      // Animated energy packets flowing down pillar
-      for (let i = 0; i < 5; i++) {
-        const progress = ((t * 0.5 + i * 0.22) % 1.0);
-        const py = ph1 + progress * (ph2 - ph1);
-        const alpha = Math.sin(progress * Math.PI) * 0.9;
-        ctx.save();
-        const glowGrad = ctx.createRadialGradient(edgeX, py, 0, edgeX, py, 10);
-        glowGrad.addColorStop(0, `rgba(255,255,255,${alpha})`);
-        glowGrad.addColorStop(0.4, `rgba(139,92,246,${alpha * 0.8})`);
-        glowGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = glowGrad;
-        ctx.beginPath();
-        ctx.arc(edgeX, py, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Horizontal rings / bands on pillar
-      const bandCount = 8;
-      for (let b = 0; b < bandCount; b++) {
-        const by = ph1 + (b / (bandCount - 1)) * (ph2 - ph1);
-        const bandAlpha = 0.3 + 0.1 * Math.sin(t + b);
-        ctx.save();
-        ctx.globalAlpha = bandAlpha;
-        ctx.strokeStyle = '#8b5cf6';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(px - hw, by);
-        ctx.lineTo(px + hw, by);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    function drawHorzPipe(y, xStart, xEnd, offset) {
-      const W = canvas.width, H = canvas.height;
-      const py = y * H;
-      const pxS = xStart * W, pxE = xEnd * W;
-
-      // Tube body
-      const tubeGrad = ctx.createLinearGradient(pxS, py - 4, pxS, py + 4);
-      tubeGrad.addColorStop(0, 'rgba(139,92,246,0.1)');
-      tubeGrad.addColorStop(0.5, 'rgba(100,180,255,0.35)');
-      tubeGrad.addColorStop(1, 'rgba(139,92,246,0.1)');
-      ctx.save();
-      ctx.strokeStyle = tubeGrad;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(pxS, py);
-      ctx.lineTo(pxE, py);
-      ctx.stroke();
-
-      // Bright top highlight
-      ctx.globalAlpha = 0.6;
-      ctx.strokeStyle = 'rgba(200,220,255,0.5)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pxS, py - 2);
-      ctx.lineTo(pxE, py - 2);
-      ctx.stroke();
-      ctx.restore();
-
-      // Moving packet on pipe
-      const prog = ((t * 0.35 + offset) % 1);
-      const dotX = pxS + prog * (pxE - pxS);
-      const dotAlpha = Math.sin(prog * Math.PI) * 0.95;
-      ctx.save();
-      ctx.globalAlpha = dotAlpha;
-      const dg = ctx.createRadialGradient(dotX, py, 0, dotX, py, 12);
-      dg.addColorStop(0, '#ffffff');
-      dg.addColorStop(0.3, '#00d4ff');
-      dg.addColorStop(1, 'transparent');
-      ctx.fillStyle = dg;
-      ctx.beginPath();
-      ctx.arc(dotX, py, 12, 0, Math.PI * 2);
-      ctx.fill();
-      // Tail
-      ctx.globalAlpha = dotAlpha * 0.3;
-      const tailGrad = ctx.createLinearGradient(dotX - 40, py, dotX, py);
-      tailGrad.addColorStop(0, 'transparent');
-      tailGrad.addColorStop(1, '#00d4ff');
-      ctx.strokeStyle = tailGrad;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(dotX - 40, py);
-      ctx.lineTo(dotX, py);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
       ctx.restore();
     }
 
     function draw() {
       const W = canvas.width, H = canvas.height;
-      t += 0.012;
+      t += 0.013;
 
-      // --- DARK BG ---
-      ctx.fillStyle = '#050115';
+      // ──────────────────────────────────────────
+      // 1. BACKGROUND
+      // ──────────────────────────────────────────
+      ctx.fillStyle = '#08051a';
       ctx.fillRect(0, 0, W, H);
 
-      // Radial ambient light from center
-      const ambient = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, W * 0.65);
-      ambient.addColorStop(0, 'rgba(80,30,160,0.35)');
-      ambient.addColorStop(0.4, 'rgba(30,10,80,0.2)');
-      ambient.addColorStop(1, 'transparent');
-      ctx.fillStyle = ambient;
+      // Ambient purple glow from center
+      const amGrad = ctx.createRadialGradient(W * 0.5, H * 0.4, 0, W * 0.5, H * 0.4, W * 0.7);
+      amGrad.addColorStop(0, 'rgba(80,30,160,0.3)');
+      amGrad.addColorStop(0.5, 'rgba(30,10,80,0.15)');
+      amGrad.addColorStop(1, 'rgba(0,0,30,0)');
+      ctx.fillStyle = amGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // ==== PERSPECTIVE GRID FLOOR ====
-      const horizon = H * 0.72;
+      // ──────────────────────────────────────────
+      // 2. PERSPECTIVE ROOM / CEILING + WALLS
+      // ──────────────────────────────────────────
+      const VP = { x: W * 0.5, y: H * 0.3 }; // vanishing point
+
+      // Ceiling lines converging to VP
       ctx.save();
-      ctx.globalAlpha = 0.22;
-      // Vertical lines (converging to center)
-      const VP = { x: W * 0.5, y: horizon };
-      for (let i = -24; i <= 24; i++) {
-        const fx = W * 0.5 + i * W * 0.05;
-        const grad = ctx.createLinearGradient(VP.x, VP.y, fx, H);
-        grad.addColorStop(0, '#8b5cf6');
-        grad.addColorStop(1, 'rgba(139,92,246,0.05)');
-        ctx.strokeStyle = grad;
+      ctx.globalAlpha = 0.18;
+      for (let i = 0; i <= 16; i++) {
+        const fx = (i / 16) * W;
+        const g = ctx.createLinearGradient(VP.x, VP.y, fx, 0);
+        g.addColorStop(0, '#8b5cf6');
+        g.addColorStop(1, 'transparent');
+        ctx.strokeStyle = g;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(VP.x, VP.y);
+        ctx.lineTo(fx, 0);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Floor lines converging to VP
+      const floorY = H * 0.73;
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      for (let i = -20; i <= 20; i++) {
+        const fx = W * 0.5 + i * W * 0.055;
+        const g = ctx.createLinearGradient(VP.x, floorY, fx, H);
+        g.addColorStop(0, '#6d28d9');
+        g.addColorStop(1, 'rgba(109,40,217,0.03)');
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(VP.x, floorY);
         ctx.lineTo(fx, H);
         ctx.stroke();
       }
-      // Horizontal lines
-      for (let row = 0; row <= 16; row++) {
-        const frac = row / 16;
-        const fy = horizon + (H - horizon) * (frac * frac);
-        const spread = W * 0.5 * frac;
-        const gg = ctx.createLinearGradient(VP.x - spread, fy, VP.x + spread, fy);
-        gg.addColorStop(0, 'transparent');
-        gg.addColorStop(0.5, '#8b5cf6');
-        gg.addColorStop(1, 'transparent');
-        ctx.strokeStyle = gg;
+      // Floor horizontals
+      for (let r = 0; r <= 14; r++) {
+        const frac = r / 14;
+        const fy = floorY + (H - floorY) * (frac * frac);
+        const spread = W * 0.52 * frac;
+        const hg = ctx.createLinearGradient(W * 0.5 - spread, fy, W * 0.5 + spread, fy);
+        hg.addColorStop(0, 'transparent');
+        hg.addColorStop(0.5, 'rgba(100,50,220,0.6)');
+        hg.addColorStop(1, 'transparent');
+        ctx.strokeStyle = hg;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(VP.x - spread, fy);
-        ctx.lineTo(VP.x + spread, fy);
+        ctx.moveTo(W * 0.5 - spread, fy);
+        ctx.lineTo(W * 0.5 + spread, fy);
         ctx.stroke();
       }
       ctx.restore();
 
-      // ==== PILLARS ====
-      // Left outer pillar
-      drawPillar(0.14, 0.04, 0.92, 0.055, 'L');
-      // Left inner pillar
-      drawPillar(0.27, 0.07, 0.80, 0.038, 'L');
-      // Right inner pillar
-      drawPillar(0.73, 0.07, 0.80, 0.038, 'R');
-      // Right outer pillar
-      drawPillar(0.86, 0.04, 0.92, 0.055, 'R');
-
-      // ==== HORIZONTAL PIPES ====
-      drawHorzPipe(0.32, 0.0, 0.35, 0.0);
-      drawHorzPipe(0.32, 0.65, 1.0, 0.5);
-      drawHorzPipe(0.48, 0.0, 0.28, 0.2);
-      drawHorzPipe(0.48, 0.72, 1.0, 0.7);
-      drawHorzPipe(0.64, 0.0, 0.35, 0.4);
-      drawHorzPipe(0.64, 0.65, 1.0, 0.9);
-
-      // ==== NEURAL NETWORK ====
+      // ──────────────────────────────────────────
+      // 3. SERVER RACKS (background, sides)
+      // ──────────────────────────────────────────
       ctx.save();
-      nodes.forEach(n => {
-        n.x += n.vx; n.y += n.vy;
-        if (n.x < 0 || n.x > 1) n.vx *= -1;
-        if (n.y < 0 || n.y > 1) n.vy *= -1;
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = (nodes[i].x - nodes[j].x) * W;
-          const dy = (nodes[i].y - nodes[j].y) * H;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 170) {
-            const alpha = (1 - dist / 170) * 0.28;
-            const pulse = (Math.sin(t * 1.8 + nodes[i].ph) + 1) / 2;
-            ctx.globalAlpha = alpha * (0.4 + 0.6 * pulse);
-            ctx.strokeStyle = Math.random() > 0.5 ? '#8b5cf6' : '#00d4ff';
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x * W, nodes[i].y * H);
-            ctx.lineTo(nodes[j].x * W, nodes[j].y * H);
-            ctx.stroke();
-          }
+      ctx.globalAlpha = 0.13;
+      // Left side racks
+      for (let rack = 0; rack < 4; rack++) {
+        const rx = W * (0.01 + rack * 0.045);
+        ctx.fillStyle = 'rgba(80,60,180,0.5)';
+        ctx.fillRect(rx, H * 0.15, W * 0.032, H * 0.55);
+        // Rack lights
+        for (let led = 0; led < 8; led++) {
+          const ly = H * 0.18 + led * H * 0.065;
+          ctx.fillStyle = Math.random() > 0.7 ? '#00d4ff' : '#8b5cf6';
+          ctx.fillRect(rx + 2, ly, W * 0.025, 3);
         }
       }
-      nodes.forEach(n => {
-        const pulse = (Math.sin(t * 2 + n.ph) + 1) / 2;
-        ctx.globalAlpha = 0.5 + 0.5 * pulse;
-        const g = ctx.createRadialGradient(n.x * W, n.y * H, 0, n.x * W, n.y * H, 5);
-        g.addColorStop(0, '#fff');
-        g.addColorStop(0.5, '#8b5cf6');
-        g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(n.x * W, n.y * H, 5, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
+      // Right side racks (mirrored)
+      for (let rack = 0; rack < 4; rack++) {
+        const rx = W * (0.99 - 0.032 - rack * 0.045);
+        ctx.fillStyle = 'rgba(80,60,180,0.5)';
+        ctx.fillRect(rx, H * 0.15, W * 0.032, H * 0.55);
+        for (let led = 0; led < 8; led++) {
+          const ly = H * 0.18 + led * H * 0.065;
+          ctx.fillStyle = Math.random() > 0.7 ? '#00d4ff' : '#8b5cf6';
+          ctx.fillRect(rx + 2, ly, W * 0.025, 3);
+        }
+      }
       ctx.restore();
 
-      // ==== PARTICLES ====
-      ctx.save();
-      parts.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
-        if (p.x < -10) p.x = W + 10;
-        if (p.x > W + 10) p.x = -10;
-        const flicker = 0.5 + 0.5 * Math.sin(t * 3 + p.x * 0.05);
-        ctx.globalAlpha = p.a * flicker;
-        ctx.fillStyle = `rgba(${p.c[0]},${p.c[1]},${p.c[2]},1)`;
+      // ──────────────────────────────────────────
+      // 4. PILLARS (glass crystal columns)
+      // ──────────────────────────────────────────
+      const drawPillar = (cxP, topY, botY, hw, streams, side) => {
+        // Glass body
+        const bGrad = ctx.createLinearGradient(cxP - hw, 0, cxP + hw, 0);
+        if (side === 'L') {
+          bGrad.addColorStop(0, 'rgba(0,0,40,0)');
+          bGrad.addColorStop(0.2, 'rgba(70,50,160,0.22)');
+          bGrad.addColorStop(0.55, 'rgba(120,90,220,0.38)');
+          bGrad.addColorStop(0.82, 'rgba(160,120,255,0.55)');
+          bGrad.addColorStop(1, 'rgba(200,180,255,0.25)');
+        } else {
+          bGrad.addColorStop(0, 'rgba(200,180,255,0.25)');
+          bGrad.addColorStop(0.18, 'rgba(160,120,255,0.55)');
+          bGrad.addColorStop(0.45, 'rgba(120,90,220,0.38)');
+          bGrad.addColorStop(0.8, 'rgba(70,50,160,0.22)');
+          bGrad.addColorStop(1, 'rgba(0,0,40,0)');
+        }
+        ctx.fillStyle = bGrad;
+        ctx.fillRect(cxP - hw, topY, hw * 2, botY - topY);
+
+        // Bright highlight edge
+        const edgeX = side === 'L' ? cxP + hw * 0.82 : cxP - hw * 0.82;
+        const eGrad = ctx.createLinearGradient(0, topY, 0, botY);
+        eGrad.addColorStop(0, 'rgba(180,140,255,0)');
+        eGrad.addColorStop(0.08, 'rgba(200,170,255,0.9)');
+        eGrad.addColorStop(0.5, 'rgba(150,110,255,0.8)');
+        eGrad.addColorStop(0.92, 'rgba(200,170,255,0.9)');
+        eGrad.addColorStop(1, 'rgba(180,140,255,0)');
+        ctx.save();
+        ctx.strokeStyle = eGrad;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#8b5cf6';
+        ctx.shadowBlur = 15;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
-      ctx.restore();
+        ctx.moveTo(edgeX, topY);
+        ctx.lineTo(edgeX, botY);
+        ctx.stroke();
+        ctx.restore();
 
-      // ==== CENTER PORTAL FRAME ====
-      const cx = W * 0.5, cy = H * 0.40;
-      const fW = W * 0.44, fH = H * 0.64;
-      const fx = cx - fW / 2, fy = cy - fH * 0.52;
-      const framePulse = 0.6 + 0.4 * Math.sin(t * 1.2);
+        // Inner edge line (opposite side)
+        const innerX = side === 'L' ? cxP - hw * 0.75 : cxP + hw * 0.75;
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = 'rgba(139,92,246,0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(innerX, topY + 10);
+        ctx.lineTo(innerX, botY - 10);
+        ctx.stroke();
+        ctx.restore();
+
+        // Horizontal band lines on pillar
+        const bands = 12;
+        for (let b = 0; b < bands; b++) {
+          const by = topY + ((b + 0.5) / bands) * (botY - topY);
+          const ba = 0.2 + 0.12 * Math.sin(t * 1.5 + b * 0.8);
+          ctx.save();
+          ctx.globalAlpha = ba;
+          ctx.strokeStyle = 'rgba(139,92,246,0.7)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(cxP - hw * 0.7, by);
+          ctx.lineTo(cxP + hw * 0.7, by);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Particle streams inside pillar
+        streams.forEach(p => {
+          p.y += p.speed;
+          if (p.y > 1) p.y = 0;
+          const py = topY + p.y * (botY - topY);
+          const px = cxP + p.offset * hw * 8;
+          const alpha = Math.sin(p.y * Math.PI) * p.brightness * 0.85;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          const pg = ctx.createRadialGradient(px, py, 0, px, py, p.size * 4);
+          pg.addColorStop(0, '#ffffff');
+          pg.addColorStop(0.3, '#a78bfa');
+          pg.addColorStop(1, 'transparent');
+          ctx.fillStyle = pg;
+          ctx.beginPath();
+          ctx.arc(px, py, p.size * 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        // Glow at pillar base
+        ctx.save();
+        const baseGlow = ctx.createRadialGradient(cxP, botY, 0, cxP, botY, hw * 2.5);
+        baseGlow.addColorStop(0, 'rgba(139,92,246,0.4)');
+        baseGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = baseGlow;
+        ctx.globalAlpha = 0.6 + 0.2 * Math.sin(t * 1.5);
+        ctx.beginPath();
+        ctx.ellipse(cxP, botY, hw * 2.5, hw * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      // Draw 4 pillars matching the reference image layout
+      drawPillar(W * 0.17, H * 0.04, H * 0.88, W * 0.045, streamL1, 'L');
+      drawPillar(W * 0.295, H * 0.08, H * 0.78, W * 0.028, streamL2, 'L');
+      drawPillar(W * 0.705, H * 0.08, H * 0.78, W * 0.028, streamR2, 'R');
+      drawPillar(W * 0.83, H * 0.04, H * 0.88, W * 0.045, streamR1, 'R');
+
+      // ──────────────────────────────────────────
+      // 5. HORIZONTAL PIPE SYSTEM (foreground)
+      // ──────────────────────────────────────────
+      const drawPipe = (y, xL, xR, diam, offset) => {
+        const py = y * H;
+        const pxL = xL * W, pxR = xR * W;
+        const d = diam * H;
+
+        // Pipe 3D cylinder effect
+        const cGrad = ctx.createLinearGradient(pxL, py - d, pxL, py + d);
+        cGrad.addColorStop(0, 'rgba(180,150,255,0.25)');
+        cGrad.addColorStop(0.25, 'rgba(139,92,246,0.55)');
+        cGrad.addColorStop(0.5, 'rgba(80,50,180,0.7)');
+        cGrad.addColorStop(0.75, 'rgba(50,30,120,0.55)');
+        cGrad.addColorStop(1, 'rgba(20,10,60,0.2)');
+        ctx.save();
+        ctx.fillStyle = cGrad;
+        ctx.fillRect(pxL, py - d, pxR - pxL, d * 2);
+
+        // Top highlight line
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = 'rgba(200,180,255,0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = '#a78bfa';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(pxL, py - d * 0.75);
+        ctx.lineTo(pxR, py - d * 0.75);
+        ctx.stroke();
+
+        // Bottom reflection
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = 'rgba(139,92,246,0.5)';
+        ctx.lineWidth = 1;
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(pxL, py + d * 0.75);
+        ctx.lineTo(pxR, py + d * 0.75);
+        ctx.stroke();
+        ctx.restore();
+
+        // Neon strip on top of pipe
+        ctx.save();
+        ctx.globalAlpha = 0.6 + 0.3 * Math.sin(t * 2 + offset);
+        const stripGrad = ctx.createLinearGradient(pxL, 0, pxR, 0);
+        stripGrad.addColorStop(0, 'transparent');
+        stripGrad.addColorStop(0.1, '#00d4ff');
+        stripGrad.addColorStop(0.9, '#8b5cf6');
+        stripGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = stripGrad;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(pxL, py - d);
+        ctx.lineTo(pxR, py - d);
+        ctx.stroke();
+        ctx.restore();
+
+        // Moving energy packet
+        pipeMovers.filter(m => Math.abs(m.offset - offset) < 0.15).forEach(mover => {
+          const prog = ((t * mover.speed + mover.offset) % 1);
+          const mx = pxL + prog * (pxR - pxL);
+          const ma = Math.sin(prog * Math.PI) * 0.95;
+          ctx.save();
+          ctx.globalAlpha = ma;
+          const mg = ctx.createRadialGradient(mx, py, 0, mx, py, 16);
+          mg.addColorStop(0, '#ffffff');
+          mg.addColorStop(0.25, '#00d4ff');
+          mg.addColorStop(0.6, 'rgba(0,212,255,0.3)');
+          mg.addColorStop(1, 'transparent');
+          ctx.fillStyle = mg;
+          ctx.beginPath();
+          ctx.arc(mx, py, 16, 0, Math.PI * 2);
+          ctx.fill();
+          // Tail glow
+          ctx.globalAlpha = ma * 0.35;
+          const tailG = ctx.createLinearGradient(mx - 60, py, mx, py);
+          tailG.addColorStop(0, 'transparent');
+          tailG.addColorStop(1, '#00d4ff');
+          ctx.strokeStyle = tailG;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(mx - 60, py);
+          ctx.lineTo(mx, py);
+          ctx.stroke();
+          ctx.restore();
+        });
+      };
+
+      // Foreground pipes
+      drawPipe(0.78, 0.18, 0.42, 0.025, 0);
+      drawPipe(0.78, 0.58, 0.82, 0.025, 0.3);
+      drawPipe(0.84, 0.18, 0.42, 0.02, 0.5);
+      drawPipe(0.84, 0.58, 0.82, 0.02, 0.7);
+      drawPipe(0.90, 0.18, 0.82, 0.015, 0.2);
+
+      // Middle horizontal pipe connectors
+      drawPipe(0.42, 0.03, 0.36, 0.018, 0.1);
+      drawPipe(0.42, 0.64, 0.97, 0.018, 0.6);
+      drawPipe(0.55, 0.03, 0.3, 0.015, 0.4);
+      drawPipe(0.55, 0.7, 0.97, 0.015, 0.8);
+
+      // ──────────────────────────────────────────
+      // 6. CENTRAL PORTAL ARCH FRAME
+      // ──────────────────────────────────────────
+      const cx = W * 0.5, cy = H * 0.44;
+      const arcW = W * 0.42, arcH = H * 0.58;
+      const ax = cx - arcW / 2, ay = cy - arcH * 0.54;
+      const framePulse = 0.65 + 0.35 * Math.sin(t * 1.1);
+
+      // Frame glow
+      const frameGrad = ctx.createLinearGradient(ax, ay, ax + arcW, ay);
+      frameGrad.addColorStop(0, 'rgba(0,212,255,0)');
+      frameGrad.addColorStop(0.2, `rgba(139,92,246,${framePulse * 0.85})`);
+      frameGrad.addColorStop(0.5, `rgba(0,212,255,${framePulse})`);
+      frameGrad.addColorStop(0.8, `rgba(139,92,246,${framePulse * 0.85})`);
+      frameGrad.addColorStop(1, 'rgba(0,212,255,0)');
 
       ctx.save();
-      ctx.globalAlpha = framePulse;
-      const fGrad = ctx.createLinearGradient(fx, fy, fx + fW, fy);
-      fGrad.addColorStop(0, 'rgba(0,212,255,0.0)');
-      fGrad.addColorStop(0.1, 'rgba(139,92,246,0.8)');
-      fGrad.addColorStop(0.5, 'rgba(0,212,255,0.9)');
-      fGrad.addColorStop(0.9, 'rgba(139,92,246,0.8)');
-      fGrad.addColorStop(1, 'rgba(0,212,255,0.0)');
-      ctx.strokeStyle = fGrad;
+      ctx.shadowColor = '#00d4ff';
+      ctx.shadowBlur = 18;
+      ctx.strokeStyle = frameGrad;
       ctx.lineWidth = 2.5;
-      // Top
-      ctx.beginPath(); ctx.moveTo(fx + 20, fy); ctx.lineTo(fx + fW - 20, fy); ctx.stroke();
-      // Bottom
-      ctx.beginPath(); ctx.moveTo(fx + 20, fy + fH); ctx.lineTo(fx + fW - 20, fy + fH); ctx.stroke();
-      // Left
-      ctx.beginPath(); ctx.moveTo(fx, fy + 20); ctx.lineTo(fx, fy + fH - 20); ctx.stroke();
-      // Right
-      ctx.beginPath(); ctx.moveTo(fx + fW, fy + 20); ctx.lineTo(fx + fW, fy + fH - 20); ctx.stroke();
+      ctx.globalAlpha = framePulse;
+      // Top horizontal
+      ctx.beginPath(); ctx.moveTo(ax + 24, ay); ctx.lineTo(ax + arcW - 24, ay); ctx.stroke();
+      // Bottom horizontal
+      ctx.beginPath(); ctx.moveTo(ax + 24, ay + arcH); ctx.lineTo(ax + arcW - 24, ay + arcH); ctx.stroke();
+      // Left vertical
+      ctx.beginPath(); ctx.moveTo(ax, ay + 24); ctx.lineTo(ax, ay + arcH - 24); ctx.stroke();
+      // Right vertical
+      ctx.beginPath(); ctx.moveTo(ax + arcW, ay + 24); ctx.lineTo(ax + arcW, ay + arcH - 24); ctx.stroke();
 
-      // Corner brackets
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.9;
-      [[fx, fy, 1, 1], [fx + fW, fy, -1, 1], [fx, fy + fH, 1, -1], [fx + fW, fy + fH, -1, -1]].forEach(([bx, by, dx, dy]) => {
+      // Corner L-brackets
+      ctx.lineWidth = 3.5;
+      ctx.globalAlpha = 0.92;
+      const corners = [
+        [ax, ay, 1, 1], [ax + arcW, ay, -1, 1],
+        [ax, ay + arcH, 1, -1], [ax + arcW, ay + arcH, -1, -1],
+      ];
+      corners.forEach(([bx, by, dx, dy]) => {
         ctx.beginPath();
-        ctx.moveTo(bx, by + dy * 30);
-        ctx.lineTo(bx, by);
-        ctx.lineTo(bx + dx * 30, by);
+        ctx.moveTo(bx, by + dy * 38);
+        ctx.lineTo(bx, by); ctx.lineTo(bx + dx * 38, by);
+        ctx.stroke();
+      });
+      // Inner corner smaller accents
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.45;
+      corners.forEach(([bx, by, dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(bx + dx * 10, by + dy * 55);
+        ctx.lineTo(bx + dx * 10, by + dy * 10);
+        ctx.lineTo(bx + dx * 55, by + dy * 10);
         ctx.stroke();
       });
       ctx.restore();
 
-      // ==== HOLOGRAPHIC RINGS ====
+      // ──────────────────────────────────────────
+      // 7. ARCH / PIPING above logo (like reference)
+      // ──────────────────────────────────────────
+      // Top horizontal pipe spanning frame width
       ctx.save();
-      const rings = [
-        { rW: 0.13, rH: 0.065, speed: 0.7, phase: 0, color: '#8b5cf6', lw: 2.5 },
-        { rW: 0.19, rH: 0.095, speed: -0.45, phase: 1.2, color: '#00d4ff', lw: 1.5 },
-        { rW: 0.26, rH: 0.13, speed: 0.3, phase: 2.5, color: '#8b5cf6', lw: 1 },
+      ctx.globalAlpha = 0.6 + 0.25 * Math.sin(t * 1.8);
+      const topPipeGrad = ctx.createLinearGradient(ax, 0, ax + arcW, 0);
+      topPipeGrad.addColorStop(0, 'transparent');
+      topPipeGrad.addColorStop(0.1, '#8b5cf6');
+      topPipeGrad.addColorStop(0.5, '#00d4ff');
+      topPipeGrad.addColorStop(0.9, '#8b5cf6');
+      topPipeGrad.addColorStop(1, 'transparent');
+      ctx.strokeStyle = topPipeGrad;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#8b5cf6';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay); ctx.lineTo(ax + arcW, ay);
+      ctx.stroke();
+      ctx.restore();
+
+      // Extended horizontal pipes from frame sides
+      gLine(W * 0.08, ay, ax, ay, '#8b5cf6', 0.5, 2);
+      gLine(ax + arcW, ay, W * 0.92, ay, '#8b5cf6', 0.5, 2);
+
+      // ──────────────────────────────────────────
+      // 8. HOLOGRAPHIC RINGS around logo
+      // ──────────────────────────────────────────
+      const logoY = cy - H * 0.08;
+      const ringsData = [
+        { rx: 0.12, ry: 0.045, speed: 0.55, col: '#8b5cf6', lw: 2, ph: 0 },
+        { rx: 0.175, ry: 0.065, speed: -0.38, col: '#00d4ff', lw: 1.5, ph: 1.5 },
+        { rx: 0.235, ry: 0.088, speed: 0.28, col: '#a78bfa', lw: 1, ph: 3 },
       ];
-      rings.forEach((ring) => {
-        const angle = t * ring.speed + ring.phase;
+      ringsData.forEach(ring => {
         ctx.save();
-        ctx.translate(cx, cy - H * 0.03);
-        ctx.rotate(angle * 0.2);
-        ctx.scale(1, 0.38);
-        ctx.globalAlpha = 0.5 + 0.2 * Math.sin(t + ring.phase);
-        const rg = ctx.createLinearGradient(-ring.rW * W, 0, ring.rW * W, 0);
-        rg.addColorStop(0, 'transparent');
-        rg.addColorStop(0.3, ring.color);
-        rg.addColorStop(0.7, ring.color);
-        rg.addColorStop(1, 'transparent');
-        ctx.strokeStyle = rg;
+        ctx.translate(cx, logoY);
+        ctx.rotate(t * ring.speed + ring.ph);
+        const ra = 0.4 + 0.2 * Math.sin(t * 1.5 + ring.ph);
+        ctx.globalAlpha = ra;
+        ctx.strokeStyle = ring.col;
         ctx.lineWidth = ring.lw;
+        ctx.shadowColor = ring.col;
+        ctx.shadowBlur = 12;
+        ctx.scale(1, 0.35);
         ctx.beginPath();
-        ctx.arc(0, 0, ring.rW * W, 0, Math.PI * 2);
+        ctx.arc(0, 0, ring.rx * W, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       });
-      ctx.restore();
 
-      // ==== CENTER GLOW ====
+      // ──────────────────────────────────────────
+      // 9. VAMPEXAI TRIANGLE LOGO (drawn)
+      // ──────────────────────────────────────────
+      const logoSize = Math.min(W, H) * 0.13;
+      const lx = cx, ly = cy - H * 0.16;
+
+      // Outer halo
       ctx.save();
-      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.32);
-      glow.addColorStop(0, 'rgba(139,92,246,0.3)');
-      glow.addColorStop(0.3, 'rgba(0,212,255,0.1)');
-      glow.addColorStop(1, 'transparent');
-      ctx.fillStyle = glow;
+      const halo = ctx.createRadialGradient(lx, ly, 0, lx, ly, logoSize * 1.4);
+      halo.addColorStop(0, `rgba(139,92,246,${0.45 + 0.2 * Math.sin(t * 1.5)})`);
+      halo.addColorStop(0.5, 'rgba(0,212,255,0.12)');
+      halo.addColorStop(1, 'transparent');
+      ctx.fillStyle = halo;
       ctx.beginPath();
-      ctx.arc(cx, cy, W * 0.32, 0, Math.PI * 2);
+      ctx.arc(lx, ly, logoSize * 1.4, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // ==== LOGO ====
-      if (logoImg.complete && logoImg.naturalWidth > 0) {
-        const logoSize = Math.min(W, H) * 0.14;
-        const lx = cx - logoSize / 2;
-        const ly = cy - logoSize * 1.05;
-
-        // Logo halo
-        ctx.save();
-        const halo = ctx.createRadialGradient(cx, ly + logoSize / 2, 0, cx, ly + logoSize / 2, logoSize * 1.3);
-        halo.addColorStop(0, `rgba(139,92,246,${0.5 + 0.2 * Math.sin(t * 1.5)})`);
-        halo.addColorStop(0.5, 'rgba(0,212,255,0.15)');
-        halo.addColorStop(1, 'transparent');
-        ctx.fillStyle = halo;
-        ctx.beginPath();
-        ctx.arc(cx, ly + logoSize / 2, logoSize * 1.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // Draw logo
-        ctx.save();
-        ctx.shadowColor = '#8b5cf6';
-        ctx.shadowBlur = 35 + 20 * Math.sin(t * 1.5);
-        ctx.drawImage(logoImg, lx, ly, logoSize, logoSize);
-        ctx.restore();
-
-        // VampExAi text
-        ctx.save();
-        const fs = Math.max(18, W * 0.0385);
-        ctx.font = `900 ${fs}px Inter, sans-serif`;
-        ctx.textAlign = 'center';
-        const ty = cy + logoSize * 0.22;
-        ctx.shadowColor = '#00d4ff';
-        ctx.shadowBlur = 25 + 10 * Math.sin(t);
-        const tg = ctx.createLinearGradient(cx - W * 0.15, 0, cx + W * 0.15, 0);
-        tg.addColorStop(0, '#8b5cf6');
-        tg.addColorStop(0.5, '#00d4ff');
-        tg.addColorStop(1, '#8b5cf6');
-        ctx.fillStyle = tg;
-        ctx.globalAlpha = 0.97;
-        ctx.fillText('VampExAi', cx, ty);
-        ctx.restore();
-      }
-
-      // Subtle scanline overlay
+      // Triangle shape (matching reference: blue top, purple overlap)
+      const triSize = logoSize * 0.68;
+      // Blue triangle (top one, pointing up-right)
       ctx.save();
-      ctx.globalAlpha = 0.025;
-      for (let sl = 0; sl < H; sl += 3) {
+      ctx.shadowColor = '#00d4ff';
+      ctx.shadowBlur = 30 + 12 * Math.sin(t * 1.5);
+      const blueGrad = ctx.createLinearGradient(lx, ly - triSize, lx + triSize * 0.7, ly + triSize * 0.3);
+      blueGrad.addColorStop(0, 'rgba(0,212,255,0.95)');
+      blueGrad.addColorStop(1, 'rgba(0,150,200,0.6)');
+      ctx.fillStyle = blueGrad;
+      ctx.strokeStyle = 'rgba(0,212,255,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly - triSize * 1.05);
+      ctx.lineTo(lx + triSize * 0.82, ly + triSize * 0.35);
+      ctx.lineTo(lx - triSize * 0.1, ly + triSize * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // Purple triangle (front one, pointing down)
+      ctx.save();
+      ctx.shadowColor = '#8b5cf6';
+      ctx.shadowBlur = 25 + 10 * Math.sin(t * 1.5);
+      const purpGrad = ctx.createLinearGradient(lx - triSize * 0.6, ly - triSize * 0.3, lx + triSize * 0.1, ly + triSize * 0.9);
+      purpGrad.addColorStop(0, 'rgba(139,92,246,0.9)');
+      purpGrad.addColorStop(1, 'rgba(80,30,160,0.85)');
+      ctx.fillStyle = purpGrad;
+      ctx.strokeStyle = 'rgba(139,92,246,0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(lx - triSize * 0.68, ly - triSize * 0.25);
+      ctx.lineTo(lx + triSize * 0.15, ly - triSize * 0.25);
+      ctx.lineTo(lx - triSize * 0.25, ly + triSize * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // ──────────────────────────────────────────
+      // 10. "VampExAi" TEXT (neon pink/cyan)
+      // ──────────────────────────────────────────
+      ctx.save();
+      const fontSize = Math.max(22, W * 0.042);
+      ctx.font = `900 ${fontSize}px Inter, 'Space Grotesk', sans-serif`;
+      ctx.textAlign = 'center';
+      const textY = cy + H * 0.12;
+
+      // Text neon glow layers
+      ctx.shadowColor = '#cc00ff';
+      ctx.shadowBlur = 35 + 15 * Math.sin(t);
+      const tGrad = ctx.createLinearGradient(cx - W * 0.15, 0, cx + W * 0.15, 0);
+      tGrad.addColorStop(0, '#a855f7');
+      tGrad.addColorStop(0.35, '#ff00d4');
+      tGrad.addColorStop(0.65, '#c084fc');
+      tGrad.addColorStop(1, '#818cf8');
+      ctx.fillStyle = tGrad;
+      ctx.globalAlpha = 0.97;
+      ctx.fillText('VampExAi', cx, textY);
+      ctx.restore();
+
+      // ──────────────────────────────────────────
+      // 11. FLOATING PARTICLES
+      // ──────────────────────────────────────────
+      ctx.save();
+      floatParts.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+        if (p.x < -0.02 || p.x > 1.02) p.x = Math.random();
+        const flicker = 0.5 + 0.5 * Math.sin(t * 4 + p.x * 30);
+        ctx.globalAlpha = p.a * flicker;
+        ctx.fillStyle = p.c;
+        ctx.beginPath();
+        ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // ──────────────────────────────────────────
+      // 12. FLOOR REFLECTION (logo + text mirror)
+      // ──────────────────────────────────────────
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.save();
+      ctx.translate(cx, floorY);
+      ctx.scale(1, -0.35);
+      // Reflected text
+      const reflFontSize = Math.max(18, W * 0.038);
+      ctx.font = `900 ${reflFontSize}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#8b5cf6';
+      ctx.fillText('VampExAi', 0, -(floorY - (cy + H * 0.12)));
+      ctx.restore();
+      ctx.restore();
+
+      // Scanlines
+      ctx.save();
+      ctx.globalAlpha = 0.03;
+      for (let sl = 0; sl < H; sl += 4) {
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, sl, W, 1);
+        ctx.fillRect(0, sl, W, 2);
       }
       ctx.restore();
 
