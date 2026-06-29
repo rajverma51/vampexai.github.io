@@ -38,6 +38,13 @@ body {
   background-repeat: no-repeat;
 }
 
+@media (max-width: 768px) {
+  body {
+    background-size: contain;
+    background-position: center 20%;
+  }
+}
+
 /* Dark overlay so content is readable over the background */
 body::before {
   content: '';
