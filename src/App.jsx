@@ -372,7 +372,7 @@ function App() {
                 { icon: <Shield />, title: "Battle-Tested Security", desc: "Contracts audited by CertiK. Reentrancy guards, timelocks, and immutable logic protect every transaction." },
                 { icon: <Globe />, title: "Global & Permissionless", desc: "No KYC. No borders. Connect your wallet and start earning in under 60 seconds from anywhere." },
                 { icon: <Database />, title: "Sustainable Tokenomics", desc: "Fixed supply of 10,000,000 tokens. Deflationary mechanisms ensure long-term value appreciation." },
-                { icon: <Users />, title: "10-Level Referral", desc: "Build your network and earn passive income from up to 10 referral levels. Grow together with VampExAi." }
+                { icon: <Users />, title: "Infinite Static Referral", desc: "Build your network and earn passive income from base to Infinite Static referral levels. Grow together with VampExAi." }
               ].map((f, i) => (
                 <div key={i} className="card animated" style={{ borderTop: `4px solid ${i % 2 === 0 ? '#ff0040' : '#8b5cf6'}` }}>
                   <div style={{ color: i % 2 === 0 ? '#ff0040' : '#8b5cf6', marginBottom: '1.5rem' }}>{React.cloneElement(f.icon, { size: 40 })}</div>
@@ -399,7 +399,9 @@ function App() {
                     </div>
                   ))}
                 </div>
-                <button className="btn btn-primary" style={{ marginTop: '2.5rem' }}>Explore AI Features</button>
+                <button className="btn btn-primary" style={{ marginTop: '2.5rem' }}>
+                  Explore AI Features <ChevronRight size={18} />
+                </button>
               </div>
               <div style={{ position: 'relative', textAlign: 'center' }}>
                  <div style={{ width: '100%', height: '300px', background: 'radial-gradient(circle, rgba(255,0,64,0.1) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justify: 'center' }}>
@@ -486,14 +488,6 @@ function App() {
                   <a href="#">AI Reward Logic</a>
                   <a href="#">Staking Pools</a>
                   <a href="#">Audit Report</a>
-                </div>
-              </div>
-              <div>
-                <h4 style={{ marginBottom: '1.5rem' }}>Community</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <a href="#">Telegram Group</a>
-                  <a href="#">Discord Server</a>
-                  <a href="#">Twitter Updates</a>
                 </div>
               </div>
             </div>
