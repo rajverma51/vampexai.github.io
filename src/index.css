@@ -40,8 +40,8 @@ body {
 
 @media (max-width: 768px) {
   body {
-    background-size: contain;
-    background-position: center 20%;
+    background-size: 100% 100%;
+    background-position: center center;
   }
 }
 
