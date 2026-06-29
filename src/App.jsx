@@ -363,7 +363,7 @@ function App() {
           <section id="protocol" className="app-container">
             <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
               <h2 style={{ fontSize: '3rem' }}>Why <span className="gradient-text">VampExAi?</span></h2>
-              <div style={{ width: '100px', h: '4px', background: 'linear-gradient(to right, #ff0040, #8b5cf6)', margin: '1rem auto' }}></div>
+              <div className="divider" style={{ width: '150px', margin: '1.5rem auto 0 auto', height: '3px' }}></div>
             </div>
             <div className="dashboard-grid">
               {[
