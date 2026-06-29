@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import HeroBg from './HeroBg';
 import { 
   Wallet, 
   Coins, 
@@ -300,26 +301,30 @@ function App() {
 
       {activeView === 'landing' ? (
         <>
-          {/* Hero Section */}
-          <section className="hero-section app-container" style={{ minHeight: '90vh', textAlign: 'left', display: 'flex', alignItems: 'center' }}>
-            <div className="hero-content animated" style={{ maxWidth: '800px' }}>
-              <div className="badge glass" style={{ padding: '0.5rem 1rem', borderRadius: '20px', marginBottom: '2rem', display: 'inline-block', fontSize: '0.8rem', color: '#ff0040' }}>
-                🧠 AI-POWERED • BSC • NON-CUSTODIAL
-              </div>
-              <h1>The Future of DeFi is <span className="gradient-text">Intelligent</span></h1>
-              <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
-                VampExAi combines advanced AI algorithms with immutable smart contracts to optimize your yield, minimize risk, and maximize returns — 24/7.
-              </p>
-              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" onClick={() => setActiveView('app')} style={{ padding: '1rem 2.5rem' }}>
-                  Start Earning <ChevronRight size={18} />
-                </button>
-                <button className="btn btn-outline" style={{ padding: '1rem 2.5rem' }}>View Documentation</button>
-              </div>
-              <div style={{ marginTop: '3rem', display: 'flex', gap: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} /> Non-Custodial</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16} /> Immutable Contracts</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Shield size={16} /> Audited by CertiK</span>
+          {/* Hero Section — Animated Canvas Background */}
+          <section style={{ position: 'relative', width: '100%', height: '95vh', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+            <HeroBg />
+            {/* Text overlay on the left */}
+            <div className="app-container" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
+              <div className="hero-content animated" style={{ maxWidth: '520px', background: 'rgba(5,2,20,0.55)', backdropFilter: 'blur(10px)', padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                <div className="badge glass" style={{ padding: '0.4rem 1rem', borderRadius: '20px', marginBottom: '1.5rem', display: 'inline-block', fontSize: '0.75rem', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.3)' }}>
+                  🧠 AI-POWERED • BSC • NON-CUSTODIAL
+                </div>
+                <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', marginBottom: '1rem', lineHeight: 1.15 }}>The Future of DeFi is <span className="gradient-text">Intelligent</span></h1>
+                <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.7' }}>
+                  VampExAi combines advanced AI algorithms with immutable smart contracts to optimize your yield, minimize risk, and maximize returns — 24/7.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <button className="btn btn-primary" onClick={() => setActiveView('app')} style={{ padding: '0.9rem 2rem' }}>
+                    Start Earning <ChevronRight size={18} />
+                  </button>
+                  <button className="btn btn-outline" style={{ padding: '0.9rem 2rem' }}>Documentation</button>
+                </div>
+                <div style={{ marginTop: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><ShieldCheck size={14} /> Non-Custodial</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Lock size={14} /> Immutable</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Shield size={14} /> Audited</span>
+                </div>
               </div>
             </div>
           </section>
