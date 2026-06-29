@@ -472,26 +472,67 @@ function App() {
           </section>
 
           {/* Footer Highlights */}
-          <footer style={{ padding: '8rem 2rem 4rem', textAlign: 'center', borderTop: '1px solid var(--glass-border)', marginTop: '4rem' }}>
-            <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', textAlign: 'left', marginBottom: '4rem' }}>
+          <footer style={{ padding: '6rem 2rem 3rem', textAlign: 'center', borderTop: '1px solid rgba(139,92,246,0.15)', marginTop: '4rem' }}>
+            <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem', textAlign: 'left', marginBottom: '3rem' }}>
+              {/* Brand Column */}
               <div>
-                <div className="logo" style={{ marginBottom: '1.5rem' }}>VampExAI</div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>The future of decentralized intelligent finance. Built for security, optimized for yield.</p>
+                <div className="logo" style={{ marginBottom: '1.2rem', fontSize: '1.8rem' }}>VampExAI</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.7' }}>The future of decentralized intelligent finance. Built for security, optimized for yield.</p>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                  <Globe size={20} color="var(--text-secondary)" />
-                  <Users size={20} color="var(--text-secondary)" />
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                    <Globe size={18} color="#8b5cf6" />
+                  </div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                    <Users size={18} color="#00d4ff" />
+                  </div>
                 </div>
               </div>
+
+              {/* Protocol Links Column */}
               <div>
-                <h4 style={{ marginBottom: '1.5rem' }}>Protocol</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <a href="#">AI Reward Logic</a>
-                  <a href="#">Staking Pools</a>
-                  <a href="#">Audit Report</a>
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', letterSpacing: '1.5px', textTransform: 'uppercase', background: 'linear-gradient(to right, #8b5cf6, #00d4ff)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Protocol</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {[
+                    { label: 'AI Reward Logic', icon: <Brain size={16} />, color: '#ff0040' },
+                    { label: 'Staking Pools', icon: <Coins size={16} />, color: '#8b5cf6' },
+                    { label: 'Audit Report', icon: <ShieldCheck size={16} />, color: '#00d4ff' }
+                  ].map((item, i) => (
+                    <a key={i} href="#" style={{
+                      display: 'flex', alignItems: 'center', gap: '0.8rem',
+                      padding: '0.75rem 1rem', borderRadius: '12px',
+                      background: 'rgba(10, 5, 30, 0.5)',
+                      border: '1px solid rgba(139,92,246,0.12)',
+                      color: 'var(--text-secondary)', fontSize: '0.9rem',
+                      textDecoration: 'none',
+                      transition: 'all 0.35s ease',
+                      backdropFilter: 'blur(8px)'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = item.color;
+                      e.currentTarget.style.boxShadow = `0 0 20px ${item.color}33, inset 0 0 15px ${item.color}15`;
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.transform = 'translateX(6px)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'rgba(139,92,246,0.12)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                    >
+                      <span style={{ color: item.color, display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+                      {item.label}
+                      <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+
+            {/* Divider line */}
+            <div className="divider" style={{ width: '100%', height: '1px', margin: '0 auto 1.5rem' }}></div>
+
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', letterSpacing: '0.5px' }}>
               © 2026 VampExAI Protocol. Decentralized • Transparent • Permissionless
             </div>
           </footer>
