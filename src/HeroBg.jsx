@@ -7,185 +7,245 @@ export default function HeroBg() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    let animFrameId;
+    let animId;
     let t = 0;
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
     resize();
     window.addEventListener('resize', resize);
 
-    // Load logo image
     const logoImg = new Image();
     logoImg.src = logo;
 
-    // --- Neural Network Nodes ---
-    const NODE_COUNT = 55;
-    const nodes = Array.from({ length: NODE_COUNT }, () => ({
+    // Particles
+    const PARTS = 100;
+    const parts = Array.from({ length: PARTS }, () => ({
+      x: Math.random() * 2000,
+      y: Math.random() * 1000,
+      r: Math.random() * 1.8 + 0.4,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: -Math.random() * 0.4 - 0.1,
+      a: Math.random(),
+      c: Math.random() > 0.5 ? [139, 92, 246] : [0, 212, 255],
+    }));
+
+    // Neural nodes (keeping edge areas only to not overpower pillars)
+    const nodes = Array.from({ length: 40 }, () => ({
       x: Math.random(),
       y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0003,
-      vy: (Math.random() - 0.5) * 0.0003,
-      r: Math.random() * 2.5 + 1,
-      pulseOffset: Math.random() * Math.PI * 2,
+      vx: (Math.random() - 0.5) * 0.0002,
+      vy: (Math.random() - 0.5) * 0.0002,
+      r: Math.random() * 1.5 + 0.5,
+      ph: Math.random() * Math.PI * 2,
     }));
 
-    // --- Floating Particles ---
-    const PARTICLE_COUNT = 120;
-    const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      size: Math.random() * 2 + 0.5,
-      speed: Math.random() * 0.0002 + 0.00005,
-      opacity: Math.random() * 0.7 + 0.2,
-      color: Math.random() > 0.5 ? '#8b5cf6' : '#00d4ff',
-      angle: Math.random() * Math.PI * 2,
-    }));
+    function drawPillar(x, y1, y2, width, side) {
+      const W = canvas.width, H = canvas.height;
+      const px = x * W, ph1 = y1 * H, ph2 = y2 * H;
+      const hw = width * W;
 
-    // --- Data Streams (vertical tubes) ---
-    const STREAM_COUNT = 14;
-    const streams = Array.from({ length: STREAM_COUNT }, (_, i) => ({
-      x: (i / (STREAM_COUNT - 1)) * 0.9 + 0.05,
-      segments: Array.from({ length: 12 }, (_, j) => ({
-        offset: Math.random(),
-        speed: Math.random() * 0.003 + 0.001,
-      })),
-    }));
+      // Main pillar body gradient
+      const bodyGrad = ctx.createLinearGradient(px - hw, 0, px + hw, 0);
+      if (side === 'L') {
+        bodyGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        bodyGrad.addColorStop(0.3, 'rgba(60,30,120,0.35)');
+        bodyGrad.addColorStop(0.7, 'rgba(100,50,200,0.55)');
+        bodyGrad.addColorStop(0.9, 'rgba(139,92,246,0.7)');
+        bodyGrad.addColorStop(1, 'rgba(180,120,255,0.4)');
+      } else {
+        bodyGrad.addColorStop(0, 'rgba(180,120,255,0.4)');
+        bodyGrad.addColorStop(0.1, 'rgba(139,92,246,0.7)');
+        bodyGrad.addColorStop(0.3, 'rgba(100,50,200,0.55)');
+        bodyGrad.addColorStop(0.7, 'rgba(60,30,120,0.35)');
+        bodyGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      }
+      ctx.fillStyle = bodyGrad;
+      ctx.fillRect(px - hw, ph1, hw * 2, ph2 - ph1);
 
-    // --- Horizontal pipes (data tubes) ---
-    const H_PIPES = [
-      { y: 0.35, xStart: 0.0, xEnd: 0.38 },
-      { y: 0.35, xStart: 0.62, xEnd: 1.0 },
-      { y: 0.65, xStart: 0.0, xEnd: 0.38 },
-      { y: 0.65, xStart: 0.62, xEnd: 1.0 },
-      { y: 0.5, xStart: 0.0, xEnd: 0.28 },
-      { y: 0.5, xStart: 0.72, xEnd: 1.0 },
-    ];
+      // Bright edge line
+      const edgeX = side === 'L' ? px + hw * 0.85 : px - hw * 0.85;
+      const edgeGrad = ctx.createLinearGradient(0, ph1, 0, ph2);
+      edgeGrad.addColorStop(0, 'rgba(139,92,246,0)');
+      edgeGrad.addColorStop(0.1, 'rgba(200,150,255,0.9)');
+      edgeGrad.addColorStop(0.5, 'rgba(139,92,246,0.9)');
+      edgeGrad.addColorStop(0.9, 'rgba(200,150,255,0.9)');
+      edgeGrad.addColorStop(1, 'rgba(139,92,246,0)');
+      ctx.save();
+      ctx.strokeStyle = edgeGrad;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(edgeX, ph1);
+      ctx.lineTo(edgeX, ph2);
+      ctx.stroke();
+      ctx.restore();
 
-    // Rings
-    const rings = [
-      { r: 0.14, speed: 0.003, phase: 0 },
-      { r: 0.20, speed: -0.002, phase: 1.0 },
-      { r: 0.27, speed: 0.0015, phase: 2.2 },
-    ];
+      // Animated energy packets flowing down pillar
+      for (let i = 0; i < 5; i++) {
+        const progress = ((t * 0.5 + i * 0.22) % 1.0);
+        const py = ph1 + progress * (ph2 - ph1);
+        const alpha = Math.sin(progress * Math.PI) * 0.9;
+        ctx.save();
+        const glowGrad = ctx.createRadialGradient(edgeX, py, 0, edgeX, py, 10);
+        glowGrad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+        glowGrad.addColorStop(0.4, `rgba(139,92,246,${alpha * 0.8})`);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(edgeX, py, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Horizontal rings / bands on pillar
+      const bandCount = 8;
+      for (let b = 0; b < bandCount; b++) {
+        const by = ph1 + (b / (bandCount - 1)) * (ph2 - ph1);
+        const bandAlpha = 0.3 + 0.1 * Math.sin(t + b);
+        ctx.save();
+        ctx.globalAlpha = bandAlpha;
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px - hw, by);
+        ctx.lineTo(px + hw, by);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawHorzPipe(y, xStart, xEnd, offset) {
+      const W = canvas.width, H = canvas.height;
+      const py = y * H;
+      const pxS = xStart * W, pxE = xEnd * W;
+
+      // Tube body
+      const tubeGrad = ctx.createLinearGradient(pxS, py - 4, pxS, py + 4);
+      tubeGrad.addColorStop(0, 'rgba(139,92,246,0.1)');
+      tubeGrad.addColorStop(0.5, 'rgba(100,180,255,0.35)');
+      tubeGrad.addColorStop(1, 'rgba(139,92,246,0.1)');
+      ctx.save();
+      ctx.strokeStyle = tubeGrad;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(pxS, py);
+      ctx.lineTo(pxE, py);
+      ctx.stroke();
+
+      // Bright top highlight
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = 'rgba(200,220,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pxS, py - 2);
+      ctx.lineTo(pxE, py - 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Moving packet on pipe
+      const prog = ((t * 0.35 + offset) % 1);
+      const dotX = pxS + prog * (pxE - pxS);
+      const dotAlpha = Math.sin(prog * Math.PI) * 0.95;
+      ctx.save();
+      ctx.globalAlpha = dotAlpha;
+      const dg = ctx.createRadialGradient(dotX, py, 0, dotX, py, 12);
+      dg.addColorStop(0, '#ffffff');
+      dg.addColorStop(0.3, '#00d4ff');
+      dg.addColorStop(1, 'transparent');
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.arc(dotX, py, 12, 0, Math.PI * 2);
+      ctx.fill();
+      // Tail
+      ctx.globalAlpha = dotAlpha * 0.3;
+      const tailGrad = ctx.createLinearGradient(dotX - 40, py, dotX, py);
+      tailGrad.addColorStop(0, 'transparent');
+      tailGrad.addColorStop(1, '#00d4ff');
+      ctx.strokeStyle = tailGrad;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(dotX - 40, py);
+      ctx.lineTo(dotX, py);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     function draw() {
-      const W = canvas.width;
-      const H = canvas.height;
-      t += 0.016;
+      const W = canvas.width, H = canvas.height;
+      t += 0.012;
 
-      // --- Background gradient ---
-      const bg = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, W * 0.8);
-      bg.addColorStop(0, '#0d0521');
-      bg.addColorStop(0.4, '#070318');
-      bg.addColorStop(1, '#020108');
-      ctx.fillStyle = bg;
+      // --- DARK BG ---
+      ctx.fillStyle = '#050115';
       ctx.fillRect(0, 0, W, H);
 
-      // --- Perspective grid floor ---
-      const horizon = H * 0.68;
-      const vp = { x: W * 0.5, y: horizon };
+      // Radial ambient light from center
+      const ambient = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, W * 0.65);
+      ambient.addColorStop(0, 'rgba(80,30,160,0.35)');
+      ambient.addColorStop(0.4, 'rgba(30,10,80,0.2)');
+      ambient.addColorStop(1, 'transparent');
+      ctx.fillStyle = ambient;
+      ctx.fillRect(0, 0, W, H);
+
+      // ==== PERSPECTIVE GRID FLOOR ====
+      const horizon = H * 0.72;
       ctx.save();
-      ctx.globalAlpha = 0.18;
-      for (let i = -20; i <= 20; i++) {
-        const x = W * 0.5 + i * W * 0.055;
-        const grad = ctx.createLinearGradient(vp.x, vp.y, x, H);
+      ctx.globalAlpha = 0.22;
+      // Vertical lines (converging to center)
+      const VP = { x: W * 0.5, y: horizon };
+      for (let i = -24; i <= 24; i++) {
+        const fx = W * 0.5 + i * W * 0.05;
+        const grad = ctx.createLinearGradient(VP.x, VP.y, fx, H);
         grad.addColorStop(0, '#8b5cf6');
-        grad.addColorStop(1, 'transparent');
+        grad.addColorStop(1, 'rgba(139,92,246,0.05)');
         ctx.strokeStyle = grad;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(vp.x, vp.y);
-        ctx.lineTo(x, H);
+        ctx.moveTo(VP.x, VP.y);
+        ctx.lineTo(fx, H);
         ctx.stroke();
       }
-      for (let row = 0; row < 12; row++) {
-        const frac = row / 12;
-        const y = horizon + (H - horizon) * (frac * frac);
-        const xSpread = W * 0.5 * frac * frac;
-        const grad = ctx.createLinearGradient(W * 0.5 - xSpread, y, W * 0.5 + xSpread, y);
-        grad.addColorStop(0, 'transparent');
-        grad.addColorStop(0.5, '#8b5cf6');
-        grad.addColorStop(1, 'transparent');
-        ctx.strokeStyle = grad;
+      // Horizontal lines
+      for (let row = 0; row <= 16; row++) {
+        const frac = row / 16;
+        const fy = horizon + (H - horizon) * (frac * frac);
+        const spread = W * 0.5 * frac;
+        const gg = ctx.createLinearGradient(VP.x - spread, fy, VP.x + spread, fy);
+        gg.addColorStop(0, 'transparent');
+        gg.addColorStop(0.5, '#8b5cf6');
+        gg.addColorStop(1, 'transparent');
+        ctx.strokeStyle = gg;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(W * 0.5 - xSpread, y);
-        ctx.lineTo(W * 0.5 + xSpread, y);
+        ctx.moveTo(VP.x - spread, fy);
+        ctx.lineTo(VP.x + spread, fy);
         ctx.stroke();
       }
       ctx.restore();
 
-      // --- Vertical Columns (pillars) ---
-      const pillars = [
-        { x: 0.18, y1: 0.05, y2: 0.85 },
-        { x: 0.82, y1: 0.05, y2: 0.85 },
-        { x: 0.28, y1: 0.1, y2: 0.78 },
-        { x: 0.72, y1: 0.1, y2: 0.78 },
-      ];
-      ctx.save();
-      pillars.forEach(p => {
-        const gx = ctx.createLinearGradient(p.x * W - 12, 0, p.x * W + 12, 0);
-        gx.addColorStop(0, 'transparent');
-        gx.addColorStop(0.3, 'rgba(100,80,200,0.12)');
-        gx.addColorStop(0.5, 'rgba(139,92,246,0.22)');
-        gx.addColorStop(0.7, 'rgba(100,80,200,0.12)');
-        gx.addColorStop(1, 'transparent');
-        ctx.fillStyle = gx;
-        ctx.fillRect(p.x * W - 12, p.y1 * H, 24, (p.y2 - p.y1) * H);
+      // ==== PILLARS ====
+      // Left outer pillar
+      drawPillar(0.14, 0.04, 0.92, 0.055, 'L');
+      // Left inner pillar
+      drawPillar(0.27, 0.07, 0.80, 0.038, 'L');
+      // Right inner pillar
+      drawPillar(0.73, 0.07, 0.80, 0.038, 'R');
+      // Right outer pillar
+      drawPillar(0.86, 0.04, 0.92, 0.055, 'R');
 
-        // flowing energy on pillar
-        for (let j = 0; j < 6; j++) {
-          const yFrac = ((t * 0.3 + j * 0.18) % 1);
-          const py = p.y1 * H + yFrac * (p.y2 - p.y1) * H;
-          ctx.globalAlpha = 0.6 * Math.sin(yFrac * Math.PI);
-          ctx.fillStyle = '#8b5cf6';
-          ctx.beginPath();
-          ctx.arc(p.x * W, py, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      });
-      ctx.restore();
+      // ==== HORIZONTAL PIPES ====
+      drawHorzPipe(0.32, 0.0, 0.35, 0.0);
+      drawHorzPipe(0.32, 0.65, 1.0, 0.5);
+      drawHorzPipe(0.48, 0.0, 0.28, 0.2);
+      drawHorzPipe(0.48, 0.72, 1.0, 0.7);
+      drawHorzPipe(0.64, 0.0, 0.35, 0.4);
+      drawHorzPipe(0.64, 0.65, 1.0, 0.9);
 
-      // --- Horizontal Pipes ---
-      ctx.save();
-      H_PIPES.forEach(pipe => {
-        const grad = ctx.createLinearGradient(pipe.xStart * W, 0, pipe.xEnd * W, 0);
-        grad.addColorStop(0, 'transparent');
-        grad.addColorStop(0.3, 'rgba(139,92,246,0.25)');
-        grad.addColorStop(0.7, 'rgba(0,212,255,0.2)');
-        grad.addColorStop(1, 'transparent');
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(pipe.xStart * W, pipe.y * H);
-        ctx.lineTo(pipe.xEnd * W, pipe.y * H);
-        ctx.stroke();
-
-        // Moving energy dot on pipe
-        const progress = (t * 0.25) % 1;
-        const dX = pipe.xStart * W + progress * (pipe.xEnd - pipe.xStart) * W;
-        ctx.globalAlpha = 0.9;
-        const dotGrad = ctx.createRadialGradient(dX, pipe.y * H, 0, dX, pipe.y * H, 8);
-        dotGrad.addColorStop(0, '#ffffff');
-        dotGrad.addColorStop(0.3, '#00d4ff');
-        dotGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = dotGrad;
-        ctx.beginPath();
-        ctx.arc(dX, pipe.y * H, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      });
-      ctx.restore();
-
-      // --- Neural Network Lines ---
+      // ==== NEURAL NETWORK ====
       ctx.save();
       nodes.forEach(n => {
-        n.x += n.vx;
-        n.y += n.vy;
+        n.x += n.vx; n.y += n.vy;
         if (n.x < 0 || n.x > 1) n.vx *= -1;
         if (n.y < 0 || n.y > 1) n.vy *= -1;
       });
@@ -194,10 +254,10 @@ export default function HeroBg() {
           const dx = (nodes[i].x - nodes[j].x) * W;
           const dy = (nodes[i].y - nodes[j].y) * H;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 180) {
-            const alpha = (1 - dist / 180) * 0.35;
-            const pulse = (Math.sin(t * 1.5 + nodes[i].pulseOffset) + 1) / 2;
-            ctx.globalAlpha = alpha * (0.5 + 0.5 * pulse);
+          if (dist < 170) {
+            const alpha = (1 - dist / 170) * 0.28;
+            const pulse = (Math.sin(t * 1.8 + nodes[i].ph) + 1) / 2;
+            ctx.globalAlpha = alpha * (0.4 + 0.6 * pulse);
             ctx.strokeStyle = Math.random() > 0.5 ? '#8b5cf6' : '#00d4ff';
             ctx.lineWidth = 0.8;
             ctx.beginPath();
@@ -207,198 +267,173 @@ export default function HeroBg() {
           }
         }
       }
-      // Node dots
       nodes.forEach(n => {
-        const pulse = (Math.sin(t * 2 + n.pulseOffset) + 1) / 2;
+        const pulse = (Math.sin(t * 2 + n.ph) + 1) / 2;
         ctx.globalAlpha = 0.5 + 0.5 * pulse;
-        const g = ctx.createRadialGradient(n.x * W, n.y * H, 0, n.x * W, n.y * H, n.r * 4);
-        g.addColorStop(0, '#ffffff');
-        g.addColorStop(0.4, '#8b5cf6');
+        const g = ctx.createRadialGradient(n.x * W, n.y * H, 0, n.x * W, n.y * H, 5);
+        g.addColorStop(0, '#fff');
+        g.addColorStop(0.5, '#8b5cf6');
         g.addColorStop(1, 'transparent');
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(n.x * W, n.y * H, n.r * 3, 0, Math.PI * 2);
+        ctx.arc(n.x * W, n.y * H, 5, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.globalAlpha = 1;
       ctx.restore();
 
-      // --- Floating Particles ---
+      // ==== PARTICLES ====
       ctx.save();
-      particles.forEach(p => {
-        p.x += Math.cos(p.angle) * p.speed;
-        p.y += Math.sin(p.angle) * p.speed - 0.0001;
-        if (p.y < -0.05) p.y = 1.05;
-        if (p.x < -0.05) p.x = 1.05;
-        if (p.x > 1.05) p.x = -0.05;
-        const flicker = 0.6 + 0.4 * Math.sin(t * 3 + p.x * 100);
-        ctx.globalAlpha = p.opacity * flicker;
-        ctx.fillStyle = p.color;
+      parts.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+        if (p.x < -10) p.x = W + 10;
+        if (p.x > W + 10) p.x = -10;
+        const flicker = 0.5 + 0.5 * Math.sin(t * 3 + p.x * 0.05);
+        ctx.globalAlpha = p.a * flicker;
+        ctx.fillStyle = `rgba(${p.c[0]},${p.c[1]},${p.c[2]},1)`;
         ctx.beginPath();
-        ctx.arc(p.x * W, p.y * H, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.globalAlpha = 1;
       ctx.restore();
 
-      // --- Holographic Rings around center ---
-      const cx = W * 0.5, cy = H * 0.38;
-      ctx.save();
-      rings.forEach((ring, idx) => {
-        const angle = t * ring.speed * 60 + ring.phase;
-        const rx = ring.r * W;
-        const ry = ring.r * W * 0.32;
-        ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t + idx);
+      // ==== CENTER PORTAL FRAME ====
+      const cx = W * 0.5, cy = H * 0.40;
+      const fW = W * 0.44, fH = H * 0.64;
+      const fx = cx - fW / 2, fy = cy - fH * 0.52;
+      const framePulse = 0.6 + 0.4 * Math.sin(t * 1.2);
 
+      ctx.save();
+      ctx.globalAlpha = framePulse;
+      const fGrad = ctx.createLinearGradient(fx, fy, fx + fW, fy);
+      fGrad.addColorStop(0, 'rgba(0,212,255,0.0)');
+      fGrad.addColorStop(0.1, 'rgba(139,92,246,0.8)');
+      fGrad.addColorStop(0.5, 'rgba(0,212,255,0.9)');
+      fGrad.addColorStop(0.9, 'rgba(139,92,246,0.8)');
+      fGrad.addColorStop(1, 'rgba(0,212,255,0.0)');
+      ctx.strokeStyle = fGrad;
+      ctx.lineWidth = 2.5;
+      // Top
+      ctx.beginPath(); ctx.moveTo(fx + 20, fy); ctx.lineTo(fx + fW - 20, fy); ctx.stroke();
+      // Bottom
+      ctx.beginPath(); ctx.moveTo(fx + 20, fy + fH); ctx.lineTo(fx + fW - 20, fy + fH); ctx.stroke();
+      // Left
+      ctx.beginPath(); ctx.moveTo(fx, fy + 20); ctx.lineTo(fx, fy + fH - 20); ctx.stroke();
+      // Right
+      ctx.beginPath(); ctx.moveTo(fx + fW, fy + 20); ctx.lineTo(fx + fW, fy + fH - 20); ctx.stroke();
+
+      // Corner brackets
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.9;
+      [[fx, fy, 1, 1], [fx + fW, fy, -1, 1], [fx, fy + fH, 1, -1], [fx + fW, fy + fH, -1, -1]].forEach(([bx, by, dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(bx, by + dy * 30);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(bx + dx * 30, by);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      // ==== HOLOGRAPHIC RINGS ====
+      ctx.save();
+      const rings = [
+        { rW: 0.13, rH: 0.065, speed: 0.7, phase: 0, color: '#8b5cf6', lw: 2.5 },
+        { rW: 0.19, rH: 0.095, speed: -0.45, phase: 1.2, color: '#00d4ff', lw: 1.5 },
+        { rW: 0.26, rH: 0.13, speed: 0.3, phase: 2.5, color: '#8b5cf6', lw: 1 },
+      ];
+      rings.forEach((ring) => {
+        const angle = t * ring.speed + ring.phase;
         ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(angle * 0.3);
-        ctx.scale(1, 0.4);
+        ctx.translate(cx, cy - H * 0.03);
+        ctx.rotate(angle * 0.2);
+        ctx.scale(1, 0.38);
+        ctx.globalAlpha = 0.5 + 0.2 * Math.sin(t + ring.phase);
+        const rg = ctx.createLinearGradient(-ring.rW * W, 0, ring.rW * W, 0);
+        rg.addColorStop(0, 'transparent');
+        rg.addColorStop(0.3, ring.color);
+        rg.addColorStop(0.7, ring.color);
+        rg.addColorStop(1, 'transparent');
+        ctx.strokeStyle = rg;
+        ctx.lineWidth = ring.lw;
         ctx.beginPath();
-        ctx.arc(0, 0, rx, 0, Math.PI * 2);
-        const rGrad = ctx.createLinearGradient(-rx, 0, rx, 0);
-        rGrad.addColorStop(0, 'transparent');
-        rGrad.addColorStop(0.25, '#8b5cf6');
-        rGrad.addColorStop(0.5, '#00d4ff');
-        rGrad.addColorStop(0.75, '#8b5cf6');
-        rGrad.addColorStop(1, 'transparent');
-        ctx.strokeStyle = rGrad;
-        ctx.lineWidth = idx === 0 ? 2 : 1.2;
+        ctx.arc(0, 0, ring.rW * W, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       });
-      ctx.globalAlpha = 1;
       ctx.restore();
 
-      // --- Central volumetric glow ---
+      // ==== CENTER GLOW ====
       ctx.save();
-      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.28);
-      bloom.addColorStop(0, 'rgba(139,92,246,0.22)');
-      bloom.addColorStop(0.3, 'rgba(0,212,255,0.08)');
-      bloom.addColorStop(1, 'transparent');
-      ctx.fillStyle = bloom;
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.32);
+      glow.addColorStop(0, 'rgba(139,92,246,0.3)');
+      glow.addColorStop(0.3, 'rgba(0,212,255,0.1)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(cx, cy, W * 0.28, 0, Math.PI * 2);
+      ctx.arc(cx, cy, W * 0.32, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // --- Light streaks ---
-      ctx.save();
-      for (let i = 0; i < 5; i++) {
-        const streak_t = (t * 0.18 + i * 0.22) % 1;
-        const sx = cx + (Math.cos(i * 1.3) * W * 0.4);
-        const ex = cx;
-        const sy = cy + (Math.sin(i * 1.3) * H * 0.3);
-        const ey = cy;
-        const alpha = Math.sin(streak_t * Math.PI) * 0.25;
-        const lg = ctx.createLinearGradient(sx, sy, ex, ey);
-        lg.addColorStop(0, 'transparent');
-        lg.addColorStop(1, `rgba(139,92,246,${alpha})`);
-        ctx.strokeStyle = lg;
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-
-      // --- Frame/portal arch ---
-      ctx.save();
-      const archW = W * 0.42, archH = H * 0.62;
-      const ax = cx - archW / 2, ay = cy - archH * 0.55;
-      const archGrad = ctx.createLinearGradient(ax, ay, ax + archW, ay);
-      archGrad.addColorStop(0, 'rgba(0,212,255,0.0)');
-      archGrad.addColorStop(0.1, 'rgba(139,92,246,0.5)');
-      archGrad.addColorStop(0.5, 'rgba(0,212,255,0.7)');
-      archGrad.addColorStop(0.9, 'rgba(139,92,246,0.5)');
-      archGrad.addColorStop(1, 'rgba(0,212,255,0.0)');
-      ctx.strokeStyle = archGrad;
-      ctx.lineWidth = 2;
-      const pulse = 0.7 + 0.3 * Math.sin(t * 1.5);
-      ctx.globalAlpha = pulse;
-      // Top bar
-      ctx.beginPath();
-      ctx.moveTo(ax + 18, ay);
-      ctx.lineTo(ax + archW - 18, ay);
-      ctx.stroke();
-      // Left bar
-      ctx.beginPath();
-      ctx.moveTo(ax, ay + 15);
-      ctx.lineTo(ax, ay + archH);
-      ctx.stroke();
-      // Right bar
-      ctx.beginPath();
-      ctx.moveTo(ax + archW, ay + 15);
-      ctx.lineTo(ax + archW, ay + archH);
-      ctx.stroke();
-      // Corner accents
-      ['tl', 'tr', 'bl', 'br'].forEach(corner => {
-        const bx = corner.includes('l') ? ax : ax + archW;
-        const by = corner.includes('t') ? ay : ay + archH;
-        const dx = corner.includes('l') ? 1 : -1;
-        const dy = corner.includes('t') ? 1 : -1;
-        ctx.beginPath();
-        ctx.moveTo(bx, by + dy * 25);
-        ctx.lineTo(bx, by);
-        ctx.lineTo(bx + dx * 25, by);
-        ctx.stroke();
-      });
-      ctx.globalAlpha = 1;
-      ctx.restore();
-
-      // --- Logo ---
+      // ==== LOGO ====
       if (logoImg.complete && logoImg.naturalWidth > 0) {
-        const logoSize = W * 0.12;
-        const logoX = cx - logoSize / 2;
-        const logoY = cy - logoSize * 1.0;
-        // Halo behind logo
+        const logoSize = Math.min(W, H) * 0.14;
+        const lx = cx - logoSize / 2;
+        const ly = cy - logoSize * 1.05;
+
+        // Logo halo
         ctx.save();
-        const halo = ctx.createRadialGradient(cx, cy - logoSize * 0.45, 0, cx, cy - logoSize * 0.45, logoSize * 1.1);
-        halo.addColorStop(0, 'rgba(139,92,246,0.45)');
+        const halo = ctx.createRadialGradient(cx, ly + logoSize / 2, 0, cx, ly + logoSize / 2, logoSize * 1.3);
+        halo.addColorStop(0, `rgba(139,92,246,${0.5 + 0.2 * Math.sin(t * 1.5)})`);
         halo.addColorStop(0.5, 'rgba(0,212,255,0.15)');
         halo.addColorStop(1, 'transparent');
         ctx.fillStyle = halo;
         ctx.beginPath();
-        ctx.arc(cx, cy - logoSize * 0.45, logoSize * 1.1, 0, Math.PI * 2);
+        ctx.arc(cx, ly + logoSize / 2, logoSize * 1.3, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
+
         // Draw logo
         ctx.save();
-        ctx.globalAlpha = 0.95;
         ctx.shadowColor = '#8b5cf6';
-        ctx.shadowBlur = 30 + 15 * Math.sin(t * 1.5);
-        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+        ctx.shadowBlur = 35 + 20 * Math.sin(t * 1.5);
+        ctx.drawImage(logoImg, lx, ly, logoSize, logoSize);
         ctx.restore();
-        
-        // --- "VampExAi" Text ---
+
+        // VampExAi text
         ctx.save();
-        const fontSize = W * 0.038;
-        ctx.font = `900 ${fontSize}px Inter, sans-serif`;
+        const fs = Math.max(18, W * 0.0385);
+        ctx.font = `900 ${fs}px Inter, sans-serif`;
         ctx.textAlign = 'center';
-        const textY = cy + logoSize * 0.2;
-        // Text glow
+        const ty = cy + logoSize * 0.22;
         ctx.shadowColor = '#00d4ff';
-        ctx.shadowBlur = 20 + 10 * Math.sin(t);
-        const textGrad = ctx.createLinearGradient(cx - W * 0.12, 0, cx + W * 0.12, 0);
-        textGrad.addColorStop(0, '#8b5cf6');
-        textGrad.addColorStop(0.5, '#00d4ff');
-        textGrad.addColorStop(1, '#8b5cf6');
-        ctx.fillStyle = textGrad;
-        ctx.globalAlpha = 0.95;
-        ctx.fillText('VampExAi', cx, textY);
+        ctx.shadowBlur = 25 + 10 * Math.sin(t);
+        const tg = ctx.createLinearGradient(cx - W * 0.15, 0, cx + W * 0.15, 0);
+        tg.addColorStop(0, '#8b5cf6');
+        tg.addColorStop(0.5, '#00d4ff');
+        tg.addColorStop(1, '#8b5cf6');
+        ctx.fillStyle = tg;
+        ctx.globalAlpha = 0.97;
+        ctx.fillText('VampExAi', cx, ty);
         ctx.restore();
       }
 
-      animFrameId = requestAnimationFrame(draw);
+      // Subtle scanline overlay
+      ctx.save();
+      ctx.globalAlpha = 0.025;
+      for (let sl = 0; sl < H; sl += 3) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, sl, W, 1);
+      }
+      ctx.restore();
+
+      animId = requestAnimationFrame(draw);
     }
 
     draw();
-
     return () => {
-      cancelAnimationFrame(animFrameId);
+      cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
   }, []);
